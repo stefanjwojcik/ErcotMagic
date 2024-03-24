@@ -6,6 +6,8 @@ using HTTP
 using JSON
 using DotEnv
 
+export get_auth_token, ercot_api_call, ercot_api_url, parse_ercot_response, get_ercot_data
+
 DotEnv.config()
 
 ### Prices URLS
