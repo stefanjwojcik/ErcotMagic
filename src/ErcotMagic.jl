@@ -33,10 +33,12 @@ const twodayAS = "https://api.ercot.com/api/public-reports/np3-911-er/2d_agg_as_
 
 
 """
+
 # A function to retreive the auth token 
-```julia
+```julia-repl
 token = get_auth_token()
 ```
+
 """
 function get_auth_token()
     API_URL = "https://ercotb2c.b2clogin.com/ercotb2c.onmicrosoft.com/B2C_1_PUBAPI-ROPC-FLOW/oauth2/v2.0/token?"
