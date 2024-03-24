@@ -11,16 +11,34 @@ export get_auth_token, ercot_api_call, ercot_api_url, parse_ercot_response, get_
 DotEnv.config()
 
 ### Prices URLS
+"""
+Day Ahead Prices
+"""
 const da_prices = "https://api.ercot.com/api/public-reports/np4-190-cd/dam_stlmnt_pnt_prices?"
+"""
+Real Time Prices
+"""
 const rt_prices = "https://api.ercot.com/api/public-reports/np6-970-cd/rtd_lmp_node_zone_hub?"
 
 ### Load Forecasts URLs
 # Hourly system-wide Mid-Term Load Forecasts (MTLFs) for all forecast models with an indicator for which forecast was in use by ERCOT at the time of publication for current day plus the next 7.
+"""
+Ercot Load Forecast Endpoint
+"""
 const ercot_load_forecast = "https://api.ercot.com/api/public-reports/np3-566-cd/lf_by_model_study_area?"
+"""
+Ercot Zone Load Forecast Endpoint
+"""
 const ercot_zone_load_forecast = "https://api.ercot.com/api/public-reports/np3-565-cd/lf_by_model_weather_zone?"
 
 ### Gen Forecasts URLS
+"""
+Solar System Forecast
+"""
 const solar_system_forecast = "https://api.ercot.com/api/public-reports/np4-737-cd/spp_hrly_avrg_actl_fcast?"
+"""
+Wind System Forecast
+"""
 const wind_system_forecast = "https://api.ercot.com/api/public-reports/np4-732-cd/wpp_hrly_avrg_actl_fcast?"
 
 ### Energy Only Offers URLS - API hasn't added these data as of 2024-03-25
