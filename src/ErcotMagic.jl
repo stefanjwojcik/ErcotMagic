@@ -1,17 +1,34 @@
 module ErcotMagic
 
+# Core API page: https://apiexplorer.ercot.com/
+
 using HTTP
 using JSON
 using DotEnv
 
 DotEnv.config()
 
+### Prices URLS
 const da_prices = "https://api.ercot.com/api/public-reports/np4-190-cd/dam_stlmnt_pnt_prices?"
 const rt_prices = "https://api.ercot.com/api/public-reports/np6-970-cd/rtd_lmp_node_zone_hub?"
+
+### Load Forecasts URLs
+# Hourly system-wide Mid-Term Load Forecasts (MTLFs) for all forecast models with an indicator for which forecast was in use by ERCOT at the time of publication for current day plus the next 7.
+const ercot_load_forecast = "https://api.ercot.com/api/public-reports/np3-566-cd/lf_by_model_study_area?"
+const ercot_zone_load_forecast = "https://api.ercot.com/api/public-reports/np3-565-cd/lf_by_model_weather_zone?"
+
+### Gen Forecasts URLS
+const solar_system_forecast = "https://api.ercot.com/api/public-reports/np4-737-cd/spp_hrly_avrg_actl_fcast?"
+const wind_system_forecast = "https://api.ercot.com/api/public-reports/np4-732-cd/wpp_hrly_avrg_actl_fcast?"
+
+### Energy Only Offers URLS - API hasn't added these data as of 2024-03-25
 const sixty_dam_energy_only_offers = "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_only_offers?"
 const sixty_dam_awards = "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_only_offer_awards?"
-const twodayAS = "https://api.ercot.com/api/public-reports/np3-911-er/2d_agg_as_offers_ecrsm?"
 const energybids = "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_bids?"
+
+### Ancillary Services
+const twodayAS = "https://api.ercot.com/api/public-reports/np3-911-er/2d_agg_as_offers_ecrsm?"
+
 
 """
 # A function to retreive the auth token 
@@ -72,6 +89,7 @@ twodayasurl = ercot_api_url(params, twodayAS)
 response = ercot_api_call(token["id_token"], twodayasurl)
 
 ## Sixty DAM awards
+params = Dict("deliveryDateFrom" => "2021-08-01", "deliveryDateTo" => "2024-02-25")
 sixty_dam_awards_url = ercot_api_url(params, sixty_dam_awards)
 response = ercot_api_call(token["id_token"], sixty_dam_awards_url)
 
@@ -90,6 +108,8 @@ params = Dict("deliveryDateFrom" => "2024-02-01", "deliveryDateTo" => "2024-02-2
 
 da_dat = parse_ercot_response(ercot_api_call(token["id_token"], ercot_api_url(params, da_prices)))
 
+#Note: RTD LMP includes all adders
+params = Dict("RTDTimestampFrom" => "2024-02-01T00:00:00", "RTDTimestampTo" => "2024-02-01T01:00:00")
 rt_dat = parse_ercot_response(ercot_api_call(token["id_token"], ercot_api_url(params, rt_prices)))
 
 """
@@ -101,5 +121,42 @@ function parse_ercot_response(response)
     datdict = [Dict(fields[i] => dat[j][i] for i in 1:length(fields)) for j in 1:length(dat)]
     return DataFrame(datdict)
 end
+
+"""
+# Mega function to get the data from ERCOT API
+
+Examples:
+params = Dict("deliveryDateFrom" => "2024-02-01", "deliveryDateTo" => "2024-02-25")
+da_dat = get_ercot_data(params, da_prices)
+
+# Real Time Prices for every five minutes 
+params = Dict("RTDTimestampFrom" => "2024-02-01T00:00:00", 
+                "RTDTimestampTo" => "2024-02-01T01:00:00",
+                "settlementPoint" => "HB_NORTH")
+rt_dat = get_ercot_data(params, rt_prices)
+
+## Load Forecast
+params = Dict("deliveryDateFrom" => "2024-02-01", "deliveryDateTo" => "2024-02-25")
+lf_dat = get_ercot_data(params, ercot_load_forecast)
+
+## Zone Load Forecast
+params = Dict("deliveryDateFrom" => "2024-02-21", "deliveryDateTo" => "2024-02-25")
+lf_dat = get_ercot_data(params, ercot_zone_load_forecast)
+
+## Solar System Forecast
+params = Dict("deliveryDateFrom" => "2024-02-21")
+lf_dat = get_ercot_data(params, solar_system_forecast)
+
+## Wind System Forecast
+params = Dict("deliveryDateFrom" => "2024-03-21")
+lf_dat = get_ercot_data(params, wind_system_forecast)
+
+"""
+function get_ercot_data(params, url)
+    token = get_auth_token()
+    response = ercot_api_call(token["id_token"], ercot_api_url(params, url))
+    return parse_ercot_response(response)
+end
+
 
 end # module
