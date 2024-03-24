@@ -6,6 +6,8 @@ using DotEnv
 
 DotEnv.config()
 
+const da_prices = "https://api.ercot.com/api/public-reports/np4-190-cd/dam_stlmnt_pnt_prices?"
+const rt_prices = "https://api.ercot.com/api/public-reports/np6-970-cd/rtd_lmp_node_zone_hub?"
 const sixty_dam_energy_only_offers = "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_only_offers?"
 const sixty_dam_awards = "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_only_offer_awards?"
 const twodayAS = "https://api.ercot.com/api/public-reports/np3-911-er/2d_agg_as_offers_ecrsm?"
@@ -57,6 +59,14 @@ url = ercot_api_url(params)
 # try to cal 
 response = ercot_api_call(token["id_token"], url)
 
+## DAM prices
+dampricesurl = ercot_api_url(params, da_prices)
+response = ercot_api_call(token["id_token"], dampricesurl)
+
+## RT prices
+rtpricesurl = ercot_api_url(params, rt_prices)
+response = ercot_api_call(token["id_token"], rtpricesurl)
+
 ## Two day AS
 twodayasurl = ercot_api_url(params, twodayAS)
 response = ercot_api_call(token["id_token"], twodayasurl)
@@ -73,8 +83,23 @@ function ercot_api_url(params, url)
     return url
 end 
 
+"""
+Takes a response object and returns a DataFrame
+
+params = Dict("deliveryDateFrom" => "2024-02-01", "deliveryDateTo" => "2024-02-25")
+
+da_dat = parse_ercot_response(ercot_api_call(token["id_token"], ercot_api_url(params, da_prices)))
+
+rt_dat = parse_ercot_response(ercot_api_call(token["id_token"], ercot_api_url(params, rt_prices)))
+
+"""
 function parse_ercot_response(response)
     # data is a vector of vectors, each of them is a row 
-    data = response["data"]
+    dat = response["data"]
+    fields = [response["fields"][x]["label"] for x in 1:length(response["fields"])]
+    # iterate over each row and create a dictionary
+    datdict = [Dict(fields[i] => dat[j][i] for i in 1:length(fields)) for j in 1:length(dat)]
+    return DataFrame(datdict)
+end
 
 end # module
