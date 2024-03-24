@@ -2,7 +2,7 @@
 
 using Documenter, ErcotMagic
 
-#push!(LOAD_PATH,"../src/")
+push!(LOAD_PATH,"../src/")
 #makedocs(sitename="ErcotMagic.jl", format="html")
 
 makedocs(sitename = "ErcotMagic.jl", authors = "Stefan Wojcik", 
