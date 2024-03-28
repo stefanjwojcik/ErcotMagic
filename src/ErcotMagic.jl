@@ -143,7 +143,7 @@ function parse_ercot_response(response)
     fields = [response["fields"][x]["label"] for x in 1:length(response["fields"])]
     # iterate over each row and create a dictionary
     datdict = [Dict(fields[i] => dat[j][i] for i in 1:length(fields)) for j in 1:length(dat)]
-    return DataFrame.DataFrame(datdict)
+    return DataFrame(datdict)
 end
 
 """
