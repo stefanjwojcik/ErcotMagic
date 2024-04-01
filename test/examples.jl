@@ -1,13 +1,16 @@
 ## Examples
 
-using ErcotMagic
+using ErcotMagic, DotEnv
+
+# Load the environment variables
+DotEnv.config()
 
 # Get the auth token
 token = get_auth_token()
 
 ## Just getting some data for various ERCOT API endpoints
 params = Dict("deliveryDateFrom" => "2024-02-01", "deliveryDateTo" => "2024-02-25")
-da_dat = get_ercot_data(params, da_prices)
+da_dat = get_ercot_data(params, ErcotMagic.da_prices)
 
 # Real Time Prices for every five minutes 
 params = Dict("RTDTimestampFrom" => "2024-02-01T00:00:00", 
