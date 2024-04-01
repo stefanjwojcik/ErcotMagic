@@ -4,6 +4,13 @@ using Flux, DotEnv, DataFrames, ProgressMeter, CUDA
 
 DotEnv.config()
 
+# Create a struct with experiment results 
+mutable struct ExperimentResults
+    model::Any
+    predictions::Any
+    mse::Any
+end 
+
 """
 # A Batching system for time series data
 # Create batches of a time series, X is the time series, s is the sequence length, r is the step size
@@ -66,6 +73,12 @@ function plot_ts(m, X_tr, Y_tr)
     plot([ŷ, Y_tr], label=["Predictions" "Actuals"])
 end
 
+function finalEval(m, X_valid)
+    X_val = cu.(X_valid)
+    preds = [m(x)[1] for x ∈ X_val]
+    mse = Flux.Losses.mse(preds, Y_val)
+    return ExperimentResults(m, preds, mse)
+end
 
 ######### EXPERIMENT 1: Simple Model #########
 
@@ -73,10 +86,7 @@ end
 Experiment 1: Simple Model
 alldata = dat_train, dat_valid
 seq_len = 60
-model_exp1, preds_exp1 = experiment1(alldata, 60, 1000)
-# calculate mse 
-_, Y_val = process_data(dat_valid, seq_len)
-mse_exp1 = Flux.Losses.mse(preds_exp1, Y_val)
+expResults1 = experiment1(alldata, 60, 100)
 """
 function experiment1(alldata, seq_len=60, n_epochs=10000)
     # Unpack alldata
@@ -92,20 +102,20 @@ function experiment1(alldata, seq_len=60, n_epochs=10000)
     # Train the model
     train_forecaster(m, cu.(X_tr), cu.(Y_tr), n_epochs)
     # predict on validation data
-    X_val, Y_val = process_data(X_valid, seq_len)
-    preds = [m(x)[1] for x ∈ X_val]
-    return m, preds
+    X_valid, Y_valid = process_data(X_valid, seq_len)
+    finalEval(m, X_valid)
 end
 
 """
 Experiment 2: Adding Mean and Standard Deviation
-
+alldata = dat_train, dat_valid
+expResults2 = experiment2(alldata, 60, 100)
 """
 function experiment2(alldata, seq_len=60, n_epochs=10000)
     # Unpack alldata
     X_tr, X_val = alldata
     # Process the data
-    X_tr, Y_tr = process_data(alldata, seq_len)
+    X_tr, Y_tr = process_data(X_tr, seq_len)
     # add the moving mean and moving standard deviation by batch
     for i in 1:length(X_tr)
         push!(X_tr[i], mean(X_tr[i]))
@@ -116,8 +126,8 @@ function experiment2(alldata, seq_len=60, n_epochs=10000)
         Dense(seq_len + 2, seq_len + 2, tanh), # Notice the k inputs
         Dense(seq_len + 2, seq_len + 2, tanh),
         Dense(seq_len + 2, 1, identity)
-    ) 
-    # Calculate MSE on validation data
+    ) |> gpu
+    # Generate validation data
     X_val, Y_val = process_data(X_val, seq_len)
     # add the moving mean and moving standard deviation by batch
     for i in 1:length(X_val)
@@ -126,20 +136,19 @@ function experiment2(alldata, seq_len=60, n_epochs=10000)
     end
     # Train the model
     train_forecaster(m, cu.(X_tr), cu.(Y_tr), n_epochs)
-    # predict on validation data
-    X_val, Y_val = process_data(X_valid, seq_len)
-    preds = [m(x)[1] for x ∈ X_val]
-    return m, preds
+    finalEval(m, X_val)
 end
 
 """
 Experiment 3: Going Deeper Layers
+alldata = dat_train, dat_valid
+expResults3 = experiment3(alldata, 60, 100)
 """
 function experiment3(alldata, seq_len=60, n_epochs=10000)
     # Unpack alldata
     X_tr, X_val = alldata
     # Process the data
-    X_tr, Y_tr = process_data(alldata, seq_len)
+    X_tr, Y_tr = process_data(X_tr, seq_len)
     # add the moving mean and moving standard deviation by batch
     for i in 1:length(X_tr)
         push!(X_tr[i], mean(X_tr[i]))
@@ -147,12 +156,12 @@ function experiment3(alldata, seq_len=60, n_epochs=10000)
     end    
     # Create a model
     m = Chain(
-        Dense(seq_len + 4, seq_len + 4, tanh), # Notice the k inputs
-        Dense(seq_len + 4, seq_len + 4, tanh),
-        Dense(seq_len + 4, seq_len + 4, tanh),
-        Dense(seq_len + 4, seq_len + 4, tanh),
-        Dense(seq_len + 4, 1, identity)
-    ) 
+        Dense(seq_len + 2, seq_len + 2, tanh), # Notice the k inputs
+        Dense(seq_len + 2, seq_len + 2, tanh),
+        Dense(seq_len + 2, seq_len + 2, tanh),
+        Dense(seq_len + 2, seq_len + 2, tanh),
+        Dense(seq_len + 2, 1, identity)
+    ) |> gpu
     # Generate validation data
     X_val, Y_val = process_data(X_val, seq_len)
     # add the moving mean and moving standard deviation by batch
@@ -163,9 +172,7 @@ function experiment3(alldata, seq_len=60, n_epochs=10000)
     # Train the model
     train_forecaster(m, cu.(X_tr), cu.(Y_tr), n_epochs)
     # predict on validation data
-    X_val, Y_val = process_data(X_valid, seq_len)
-    preds = [m(x)[1] for x ∈ X_val]
-    return m, preds
+    finalEval(m, X_val)
 end
 
 """
@@ -175,7 +182,7 @@ function experiment4(alldata, seq_len=60, n_epochs=10000)
     # Unpack alldata
     X_tr, X_val = alldata
     # Process the data
-    X_tr, Y_tr = process_data(alldata, seq_len)
+    X_tr, Y_tr = process_data(X_tr, seq_len)
     # add the moving mean and moving standard deviation by batch
     for i in 1:length(X_tr)
         push!(X_tr[i], mean(X_tr[i]))
@@ -199,7 +206,5 @@ function experiment4(alldata, seq_len=60, n_epochs=10000)
     # Train the model
     train_forecaster(m, cu.(X_tr), cu.(Y_tr), n_epochs)
     # predict on validation data
-    X_val, Y_val = process_data(X_valid, seq_len)
-    preds = [m(x)[1] for x ∈ X_val]
-    return m, preds
+    finalEval(m, X_valid, seq_len)
 end
