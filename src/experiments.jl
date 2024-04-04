@@ -4,6 +4,8 @@
 using Plots
 include("src/forecaster.jl")
 
+alldata = trainingdata()
+
 """
 ## Recipe for plotting ExperimentResults 
 plot(expResults1, Y_val)

@@ -4,9 +4,15 @@ module ErcotMagic
 
 using HTTP
 using JSON
-using DotEnv, DataFrames
+using DotEnv, DataFrames, JLD
+using Pkg.Artifacts
 
-export get_auth_token, ercot_api_call, ercot_api_url, parse_ercot_response, get_ercot_data
+export get_auth_token, 
+        ercot_api_call, 
+        ercot_api_url, 
+        parse_ercot_response, 
+        get_ercot_data, 
+        trainingdata
 
 DotEnv.config()
 
@@ -181,6 +187,16 @@ function get_ercot_data(params, url)
     response = ercot_api_call(token["id_token"], ercot_api_url(params, url))
     return parse_ercot_response(response)
 end
+
+## Open Artifact Training Data: utility function using artifacts
+
+function trainingdata()
+    training_dataset_path = artifact"training"
+    # read in with JLD load 
+    dat = JLD.load(training_dataset_path*"/training.jld")
+    return dat["alldata"]
+end
+
 
 
 end # module

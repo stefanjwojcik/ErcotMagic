@@ -81,27 +81,3 @@ function train_forecaster(model, X_tr, Y_tr, epochs, penalty_weight=0.0)
     end
 end
 
-# alldata = get_data()
-function get_data()
-    ##### TRAINING DATA 
-    ## Get the data from ERCOT API and train the forecaster
-    params = Dict("RTDTimestampFrom" => "2024-02-01T00:00:00", 
-                    "RTDTimestampTo" => "2024-02-02T01:00:00",
-                    "settlementPoint" => "HB_NORTH")
-    rt_dat = get_ercot_data(params, ErcotMagic.rt_prices)
-    ## Convert to Float32
-    dat_train = Float32.(rt_dat.LMP)
-
-    ###### VALIDATION DATA ######
-    ## Download the next day's data for validation 
-    params = Dict("RTDTimestampFrom" => "2024-02-02T00:00:00", 
-                    "RTDTimestampTo" => "2024-02-03T01:00:00",
-                    "settlementPoint" => "HB_NORTH")
-    rt_datval = get_ercot_data(params, ErcotMagic.rt_prices)
-    dat_valid = Float32.(rt_datval.LMP)
-
-    #### ALL DATA ####
-    alldata = dat_train, dat_valid
-    return alldata
-end
-
