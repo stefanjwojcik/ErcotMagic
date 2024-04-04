@@ -1,6 +1,6 @@
 # a simple Artifacts.toml file
 [training]
-git-tree-sha1 = ee4d944a056a2198c89dd1707557c2185e3f35e4
+git-tree-sha1 = "ee4d944a056a2198c89dd1707557c2185e3f35e4"
 
     [[training.download]]
     url = "https://github.com/stefanjwojcik/ErcotMagic/raw/main/training.tar.gz"
