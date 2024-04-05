@@ -52,6 +52,9 @@ const sixty_dam_energy_only_offers = "https://api.ercot.com/api/public-reports/n
 const sixty_dam_awards = "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_only_offer_awards?"
 const energybids = "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_bids?"
 
+## Generator data 
+const gen_data = "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_gen_res_data?"
+
 ### Ancillary Services
 const twodayAS = "https://api.ercot.com/api/public-reports/np3-911-er/2d_agg_as_offers_ecrsm?"
 
