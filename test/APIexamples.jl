@@ -33,3 +33,19 @@ lf_dat = get_ercot_data(params, solar_system_forecast)
 ## Wind System Forecast
 params = Dict("deliveryDateFrom" => "2024-03-21")
 lf_dat = get_ercot_data(params, wind_system_forecast)
+
+## Energy Only Offers
+params = Dict("deliveryDateFrom" => "2024-02-02", 
+                "deliveryDateTo" => "2024-02-03", 
+                "size" => "100", 
+                "sort" => "random()")
+eo_dat = get_ercot_data(params, ErcotMagic.sixty_dam_energy_only_offers)
+
+## Generator data 
+params = Dict("deliveryDateFrom" => "2024-02-02", 
+                "deliveryDateTo" => "2024-02-03", 
+                "size" => "100")
+gen_dat = get_ercot_data(params, gen_data)
+## Remove spaces from the column names
+gen_dat = rename(gen_dat, replace.(names(gen_dat), " " => "_"))
+## Tabulate 
