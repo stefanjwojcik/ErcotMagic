@@ -241,7 +241,7 @@ function update_sced_data()
             ## does this data exist? if so skip
             isfile("data/SCED_data_"*string(offerday)*".csv") && continue
             dat = SCED_data(from=DateTime(offerday) + Dates.Hour(7), 
-                            to=offerday+Dates.Hour(22))
+                            to=DateTime(offerday)+Dates.Hour(22))
             CSV.write("data/SCED_data_"*string(offerday)*".csv", dat)
         catch e
             println("Error on date: ", i)
