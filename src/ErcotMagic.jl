@@ -241,6 +241,42 @@ function update_sced_data()
     end
 end
 
+"""
+# Function takes in on-peak SCED data, obtains the average price for the first segment by resource 
+"""
+function average_sced_prices(dat)
+    ## Remove spaces from the column names
+    dat = rename(dat, replace.(names(dat), " " => "_"))
+    ## Remove dashes from the column names
+    dat = rename(dat, replace.(names(dat), "-" => "_"))
+    ## group by Resource_Name, Resource_Type,  
+    dat = combine(groupby(dat, [:Resource_Name, :Resource_Type, :HSL]), :Submitted_TPO_Price1 => mean)
+    return dat
+end
+
+"""
+# Function takes in on-peak SCED data, obtains the average MW's across all TPO segments
+"""
+function average_sced_mws(dat)
+    # lambda function to deal with nothing values 
+    nothing_to_zero(x) = isnothing(x) ? 0.0 : x
+    ## Remove spaces from the column names
+    dat = rename(dat, replace.(names(dat), " " => "_"))
+    ## Remove dashes from the column names
+    dat = rename(dat, replace.(names(dat), "-" => "_"))
+    # Add all TPO MW's together
+    datmw = select(dat, r"Submitted_TPO_MW")
+    datmw = nothing_to_zero.(datmw)
+    # get rowwise max of tpo cols 
+    dat.total_TPO_MW = maximum.(eachrow(datmw))
+    ## group by Resource_Name, Resource_Type,  
+    dat = combine(groupby(dat, [:Resource_Name, :Resource_Type, :HSL]), :total_TPO_MW => mean)
+    return dat
+end
+
+"""
+end
+
 function DA_energy_offers(; kwargs...)
     # From/To Dates are individual days
     from = get(kwargs, :from, Date(today()) - Dates.Day(89) )
