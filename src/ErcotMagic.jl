@@ -239,10 +239,10 @@ function update_sced_data()
     @showprogress for offerday in startdate:enddate
         try
             ## does this data exist? if so skip
-            isfile("data/SCED_data_"*string(offerday)*".jld") && continue
+            isfile("data/SCED_data_"*string(offerday)*".csv") && continue
             dat = SCED_data(from=DateTime(offerday) + Dates.Hour(7), 
                             to=offerday+Dates.Hour(22))
-            JLD.save("data/SCED_data_"*string(offerday)*".jld", Dict("data" => dat))
+            CSV.write("data/SCED_data_"*string(offerday)*".csv", dat)
         catch e
             println("Error on date: ", i)
             println(e)
@@ -327,6 +327,19 @@ function update_da_offer_data()
             println(e)
         end
     end
+end
+
+function average_da_mws(dat)
+    dat = rename(dat, replace.(names(dat), " " => "_"))
+    ## Remove dashes from the column names
+    dat = rename(dat, replace.(names(dat), "-" => "_"))
+    # Add all TPO MW's together
+    datmw = select(dat, r"Energy_Only_Offer_MW")
+    datmw = coalesce.(datmw, 0.0)
+    # get rowwise max of tpo cols 
+    dat.avg_max_DA_mw_offer = maximum.(eachrow(datmw))
+    ## group by Resource_Name, Resource_Type,  
+    dat = combine(groupby(dat, [:Settlement_Point, :QSE]), :avg_max_DA_mw_offer => mean)
 end
 
 end # module
