@@ -316,9 +316,11 @@ function update_da_offer_data()
     enddate = Date(today()) - Dates.Day(60)
     @showprogress for offerday in startdate:enddate
         try
+            # check if already exists 
+            isfile("data/DA_energy_offers_"*string(offerday)*".csv") && continue
             dat = DA_energy_offers(from=offerday, to=offerday+Dates.Day(1), onpeak=true)
             #transform nothing to missing 
-            dat = nothing_to_missing.(dat)
+            dat = ErcotMagic.nothing_to_missing.(dat)
             CSV.write("data/DA_energy_offers_"*string(offerday)*".csv", dat)
         catch e
             println("Error on date: ", offerday)
