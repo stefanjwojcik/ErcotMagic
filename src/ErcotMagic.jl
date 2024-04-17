@@ -4,7 +4,7 @@ module ErcotMagic
 
 using HTTP
 using JSON
-using DotEnv, DataFrames, JLD
+using DotEnv, DataFrames, CSV
 using Pkg.Artifacts
 using Dates, ProgressMeter
 
@@ -309,7 +309,7 @@ function update_da_offer_data()
     @showprogress for offerday in startdate:enddate
         try
             dat = DA_energy_offers(from=offerday, to=offerday+Dates.Day(1), onpeak=true)
-            JLD.save("data/DA_energy_offers_"*string(offerday)*".jld", Dict("data" => dat))
+            CSV.write("data/DA_energy_offers_"*string(offerday)*".csv", dat)
         catch e
             println("Error on date: ", offerday)
             println(e)
