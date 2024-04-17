@@ -242,6 +242,7 @@ function update_sced_data()
             isfile("data/SCED_data_"*string(offerday)*".csv") && continue
             dat = SCED_data(from=DateTime(offerday) + Dates.Hour(7), 
                             to=DateTime(offerday)+Dates.Hour(22))
+            dat = ErcotMagic.nothing_to_missing.(dat)
             CSV.write("data/SCED_data_"*string(offerday)*".csv", dat)
         catch e
             println("Error on date: ", i)
