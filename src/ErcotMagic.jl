@@ -58,6 +58,7 @@ const gen_data = "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_gen
 ### Ancillary Services
 const twodayAS = "https://api.ercot.com/api/public-reports/np3-911-er/2d_agg_as_offers_ecrsm?"
 
+const sced_data = "https://api.ercot.com/api/public-reports/np3-965-er/60_sced_gen_res_data?"
 
 """
 
