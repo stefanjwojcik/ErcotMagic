@@ -13,9 +13,17 @@ export get_auth_token,
         ercot_api_url, 
         parse_ercot_response, 
         get_ercot_data, 
-        trainingdata
+        trainingdata, 
+        nothing_to_zero,
+        SCED_data,
+        update_sced_data,
+        average_sced_prices,
+        average_sced_mws,
+        DA_energy_offers
 
 DotEnv.config()
+
+nothing_to_zero(x) = isnothing(x) ? 0.0 : x
 
 ### Prices URLS
 """
@@ -259,7 +267,6 @@ end
 """
 function average_sced_mws(dat)
     # lambda function to deal with nothing values 
-    nothing_to_zero(x) = isnothing(x) ? 0.0 : x
     ## Remove spaces from the column names
     dat = rename(dat, replace.(names(dat), " " => "_"))
     ## Remove dashes from the column names
@@ -309,6 +316,8 @@ function update_da_offer_data()
     @showprogress for offerday in startdate:enddate
         try
             dat = DA_energy_offers(from=offerday, to=offerday+Dates.Day(1), onpeak=true)
+            #transform nothing to missing 
+            dat = nothing_to_zero.(dat)
             CSV.write("data/DA_energy_offers_"*string(offerday)*".csv", dat)
         catch e
             println("Error on date: ", offerday)
