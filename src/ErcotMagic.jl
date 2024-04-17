@@ -19,7 +19,7 @@ export get_auth_token,
         update_sced_data,
         average_sced_prices,
         average_sced_mws,
-        DA_energy_offers
+        update_da_offer_data
 
 DotEnv.config()
 
