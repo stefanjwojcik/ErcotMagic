@@ -274,9 +274,6 @@ function average_sced_mws(dat)
     return dat
 end
 
-"""
-end
-
 function DA_energy_offers(; kwargs...)
     # From/To Dates are individual days
     from = get(kwargs, :from, Date(today()) - Dates.Day(89) )
