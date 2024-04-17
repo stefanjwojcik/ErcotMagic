@@ -309,7 +309,7 @@ function update_da_offer_data()
     @showprogress for offerday in startdate:enddate
         try
             dat = DA_energy_offers(from=offerday, to=offerday+Dates.Day(1), onpeak=true)
-            JLD.save("data/DA_energy_offers_"*string(i)*".jld", Dict("data" => dat))
+            JLD.save("data/DA_energy_offers_"*string(offerday)*".jld", Dict("data" => dat))
         catch e
             println("Error on date: ", offerday)
             println(e)
