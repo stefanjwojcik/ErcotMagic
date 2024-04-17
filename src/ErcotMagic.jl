@@ -6,7 +6,7 @@ using HTTP
 using JSON
 using DotEnv, DataFrames, JLD
 using Pkg.Artifacts
-using Dates 
+using Dates, ProgressMeter
 
 export get_auth_token, 
         ercot_api_call, 
