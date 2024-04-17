@@ -234,8 +234,8 @@ end
 """
 function update_sced_data()
     ## starting Date(today()) - Dates.Day(89)
-    startdate = DateTime(today()) - Dates.Day(89)
-    enddate = DateTime(today()) - Dates.Day(60)
+    startdate = Date(today()) - Dates.Day(89)
+    enddate = Date(today()) - Dates.Day(60)
     @showprogress for offerday in startdate:enddate
         try
             ## does this data exist? if so skip
