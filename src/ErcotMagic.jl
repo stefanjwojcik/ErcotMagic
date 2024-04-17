@@ -227,7 +227,7 @@ function update_sced_data()
     ## starting Date(today()) - Dates.Day(89)
     startdate = DateTime(today()) - Dates.Day(89)
     enddate = DateTime(today()) - Dates.Day(60)
-    for offerday in startdate:enddate
+    @showprogress for offerday in startdate:enddate
         try
             ## does this data exist? if so skip
             isfile("data/SCED_data_"*string(offerday)*".jld") && continue
@@ -306,7 +306,7 @@ function update_da_offer_data()
     ## starting Date(today()) - Dates.Day(89)
     startdate = Date(today()) - Dates.Day(89)
     enddate = Date(today()) - Dates.Day(60)
-    for offerday in startdate:enddate
+    @showprogress for offerday in startdate:enddate
         try
             dat = DA_energy_offers(from=offerday, to=offerday+Dates.Day(1), onpeak=true)
             JLD.save("data/DA_energy_offers_"*string(i)*".jld", Dict("data" => dat))
