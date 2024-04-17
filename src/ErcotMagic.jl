@@ -24,6 +24,7 @@ export get_auth_token,
 DotEnv.config()
 
 nothing_to_zero(x) = isnothing(x) ? 0.0 : x
+nothing_to_missing(x) = isnothing(x) ? missing : x
 
 ### Prices URLS
 """
@@ -317,7 +318,7 @@ function update_da_offer_data()
         try
             dat = DA_energy_offers(from=offerday, to=offerday+Dates.Day(1), onpeak=true)
             #transform nothing to missing 
-            dat = nothing_to_zero.(dat)
+            dat = nothing_to_missing.(dat)
             CSV.write("data/DA_energy_offers_"*string(offerday)*".csv", dat)
         catch e
             println("Error on date: ", offerday)
