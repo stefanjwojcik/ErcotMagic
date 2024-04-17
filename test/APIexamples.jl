@@ -45,7 +45,14 @@ eo_dat = get_ercot_data(params, ErcotMagic.sixty_dam_energy_only_offers)
 params = Dict("deliveryDateFrom" => "2024-02-02", 
                 "deliveryDateTo" => "2024-02-03", 
                 "size" => "100")
-gen_dat = get_ercot_data(params, gen_data)
+
+## SCED data 
+params = Dict("SCEDTimestampFrom" => "2024-02-02T01:00:00", 
+                "SCEDTimestampTo" => "2024-02-03T01:00:00", 
+                "size" => "100")
+
+sced_dat = get_ercot_data(params, ErcotMagic.sced_data)
+
 ## Remove spaces from the column names
 gen_dat = rename(gen_dat, replace.(names(gen_dat), " " => "_"))
 ## Tabulate 

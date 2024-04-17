@@ -6,6 +6,7 @@ using HTTP
 using JSON
 using DotEnv, DataFrames, JLD
 using Pkg.Artifacts
+using Dates 
 
 export get_auth_token, 
         ercot_api_call, 
@@ -202,5 +203,85 @@ function trainingdata()
 end
 
 
+### Bulk downloading SCED data 
+function SCED_data(; kwargs...)
+    from = get(kwargs, :from, DateTime(today()) - Dates.Day(89) + Dates.Hour(7))
+    to = get(kwargs, :to, from + Dates.Hour(22))
+    params = Dict("SCEDTimestampFrom" => string(from), 
+                "SCEDTimestampTo" => string(to), 
+                "size" => "1000000", 
+                #"resourceType" => "SCGT90", 
+                "submittedTPOPrice1From" => "-40", # wind comes at -40
+                "submittedTPOPrice1To" => "4000", 
+                "submittedTPOMW1From" => "5", #minimum volumetric bid 
+                "submittedTPOMW1To" => "10000", 
+                "telemeteredResourceStatus" => "ON") #  
+    get_ercot_data(params, ErcotMagic.sced_data)
+end
+
+"""
+# Bulk downloads SCED data (it's only available after 60 days, and 30 days are posted at a time)
+## Focuses on on-peak offers (he 7-22)
+"""
+function update_sced_data()
+    ## starting Date(today()) - Dates.Day(89)
+    startdate = DateTime(today()) - Dates.Day(89)
+    enddate = DateTime(today()) - Dates.Day(60)
+    for offerday in startdate:enddate
+        try
+            ## does this data exist? if so skip
+            isfile("data/SCED_data_"*string(offerday)*".jld") && continue
+            dat = SCED_data(from=DateTime(offerday) + Dates.Hour(7), 
+                            to=offerday+Dates.Hour(22))
+            JLD.save("data/SCED_data_"*string(offerday)*".jld", Dict("data" => dat))
+        catch e
+            println("Error on date: ", i)
+            println(e)
+        end
+    end
+end
+
+function DA_energy_offers(; kwargs...)
+    # From/To Dates are individual days
+    from = get(kwargs, :from, Date(today()) - Dates.Day(89) )
+    to = get(kwargs, :to, from + Dates.Day(1))
+    onpeak = get(kwargs, :onpeak, true)
+    if onpeak
+        hefrom = 7
+        heto = 22
+    else
+        hefrom = 0
+        heto = 24
+    end
+    params = Dict("deliveryDateFrom" => string(from), 
+                "deliveryDateTo" => string(to), 
+                "hourEndingFrom" => string(hefrom),
+                "hourEndingTo" => string(heto),
+                "size" => "1000000", 
+                "energyOnlyOfferMW1From" => "5", 
+                "energyOnlyOfferMW1To" => "10000",
+                "energyOnlyOfferPrice1From" => "-40",
+                "energyOnlyOfferPrice1To" => "4000")
+    get_ercot_data(params, ErcotMagic.sixty_dam_energy_only_offers)
+end
+
+"""
+# Function to update the DA offer data
+## Focuses on on-peak offers (he 7-22)
+"""
+function update_da_offer_data()
+    ## starting Date(today()) - Dates.Day(89)
+    startdate = Date(today()) - Dates.Day(89)
+    enddate = Date(today()) - Dates.Day(60)
+    for offerday in startdate:enddate
+        try
+            dat = DA_energy_offers(from=offerday, to=offerday+Dates.Day(1), onpeak=true)
+            JLD.save("data/DA_energy_offers_"*string(i)*".jld", Dict("data" => dat))
+        catch e
+            println("Error on date: ", offerday)
+            println(e)
+        end
+    end
+end
 
 end # module
