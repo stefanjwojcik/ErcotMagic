@@ -6,7 +6,7 @@ using HTTP
 using JSON
 using DotEnv, DataFrames, CSV
 using Pkg.Artifacts
-using Dates, ProgressMeter
+using Dates, ProgressMeter, Statistics
 
 export get_auth_token, 
         ercot_api_call, 
