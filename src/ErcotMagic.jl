@@ -160,6 +160,8 @@ rt_dat = parse_ercot_response(ercot_api_call(token["id_token"], ercot_api_url(pa
 function parse_ercot_response(response)
     # data is a vector of vectors, each of them is a row 
     dat = response["data"]
+    # get number of records 
+    println(response["_meta"])
     fields = [response["fields"][x]["label"] for x in 1:length(response["fields"])]
     # iterate over each row and create a dictionary
     datdict = [Dict(fields[i] => dat[j][i] for i in 1:length(fields)) for j in 1:length(dat)]
@@ -170,14 +172,15 @@ end
 # Mega function to get the data from ERCOT API
 
 Examples:
-params = Dict("deliveryDateFrom" => "2024-02-01", "deliveryDateTo" => "2024-02-25")
-da_dat = get_ercot_data(params, da_prices)
+params = Dict("deliveryDateFrom" => "2024-02-01", "deliveryDateTo" => "2024-02-25", "settlementPoint" => "HB_NORTH")
+da_dat = get_ercot_data(params, ErcotMagic.da_prices)
 
 # Real Time Prices for every five minutes 
 params = Dict("RTDTimestampFrom" => "2024-02-01T00:00:00", 
-                "RTDTimestampTo" => "2024-02-01T01:00:00",
-                "settlementPoint" => "HB_NORTH")
-rt_dat = get_ercot_data(params, rt_prices)
+                "RTDTimestampTo" => "2024-02-02T01:00:00",
+                "settlementPoint" => "HB_NORTH", 
+                "size" => "1000000")
+rt_dat = get_ercot_data(params, ErcotMagic.rt_prices)
 
 ## Load Forecast
 params = Dict("deliveryDateFrom" => "2024-02-01", "deliveryDateTo" => "2024-02-25")
