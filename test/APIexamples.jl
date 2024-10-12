@@ -9,14 +9,14 @@ DotEnv.config()
 token = get_auth_token()
 
 ## Just getting some data for various ERCOT API endpoints
-params = Dict("deliveryDateFrom" => "2024-02-01", "deliveryDateTo" => "2024-02-25")
+params = Dict("deliveryDateFrom" => "2024-02-01", "deliveryDateTo" => "2024-02-25", "settlementPoint" => "HB_NORTH")
 da_dat = get_ercot_data(params, ErcotMagic.da_prices)
 
 # Real Time Prices for every five minutes 
 params = Dict("RTDTimestampFrom" => "2024-02-01T00:00:00", 
                 "RTDTimestampTo" => "2024-02-01T01:00:00",
                 "settlementPoint" => "HB_NORTH")
-rt_dat = get_ercot_data(params, rt_prices)
+rt_dat = get_ercot_data(params, ErcotMagic.rt_prices)
 
 ## Load Forecast
 params = Dict("deliveryDateFrom" => "2024-02-01", "deliveryDateTo" => "2024-02-25")
