@@ -346,4 +346,28 @@ function average_da_mws(dat)
     dat = combine(groupby(dat, [:Settlement_Point, :QSE]), :avg_max_DA_mw_offer => mean)
 end
 
+"""
+### Get multiple days of Real-Time data 
+startdate = Date(2024, 2, 1)
+enddate = Date(2024, 2, 10)
+ex = realtime_lmp_long(Date(2024, 2, 1), Date(2024, 2, 4))
+"""
+function realtime_lmp_long(startdate::Date, enddate::Date, settlementPoint="HB_NORTH")
+    alldat = DataFrame[]
+    # split by day 
+    alldays = [x for x in startdate:Day(1):enddate]
+    for marketday in alldays 
+        fromtime = DateTime(marketday)
+        totime = DateTime(marketday + Day(1))
+        params = Dict("RTDTimestampFrom" => string(fromtime), 
+                "RTDTimestampTo" => string(totime),
+                "settlementPoint" => settlementPoint, 
+                "size" => "1000000")
+        rt_dat = get_ercot_data(params, ErcotMagic.rt_prices)
+        alldat = push!(alldat, rt_dat)
+    end
+    out = vcat.(alldat)
+    return out
+end
+
 end # module
