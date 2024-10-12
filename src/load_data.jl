@@ -75,9 +75,10 @@ end
 
 """
 ### Get multiple days of Day-Ahead data
+using ErcotMagic, Dates
 startdate = Date(2024, 2, 1)
 enddate = Date(2024, 2, 10)
-ex = dayahead_lmp_long(Date(2024, 2, 1), Date(2024, 2, 4))
+ex = ErcotMagic.dayahead_lmp_long(Date(2024, 2, 1), Date(2024, 2, 4))
 """
 function dayahead_lmp_long(startdate::Date, enddate::Date, settlementPoint="HB_NORTH")
     alldat = DataFrame[]
@@ -116,6 +117,4 @@ function load_gen_forecast_long(startdate::Date, enddate::Date, url)
     out = vcat(alldat...)
     return out
 end
-
-"""
 
