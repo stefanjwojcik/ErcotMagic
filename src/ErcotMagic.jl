@@ -117,11 +117,13 @@ params = Dict("RTDTimestampFrom" => "2024-02-01T00:00:00", "RTDTimestampTo" => "
 rt_dat = parse_ercot_response(ercot_api_call(token["id_token"], ercot_api_url(params, rt_prices)))
 
 """
-function parse_ercot_response(response)
+function parse_ercot_response(response; verbose=false)
     # data is a vector of vectors, each of them is a row 
     dat = response["data"]
     # get number of records 
-    println(response["_meta"])
+    if verbose
+        println("Number of records: ", length(dat))
+    end
     fields = [response["fields"][x]["label"] for x in 1:length(response["fields"])]
     # iterate over each row and create a dictionary
     datdict = [Dict(fields[i] => dat[j][i] for i in 1:length(fields)) for j in 1:length(dat)]
