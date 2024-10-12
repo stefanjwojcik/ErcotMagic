@@ -26,49 +26,9 @@ DotEnv.config()
 nothing_to_zero(x) = isnothing(x) ? 0.0 : x
 nothing_to_missing(x) = isnothing(x) ? missing : x
 
-### Prices URLS
-"""
-Day Ahead Prices
-"""
-const da_prices = "https://api.ercot.com/api/public-reports/np4-190-cd/dam_stlmnt_pnt_prices?"
-"""
-Real Time Prices
-"""
-const rt_prices = "https://api.ercot.com/api/public-reports/np6-970-cd/rtd_lmp_node_zone_hub?"
-
-### Load Forecasts URLs
-# Hourly system-wide Mid-Term Load Forecasts (MTLFs) for all forecast models with an indicator for which forecast was in use by ERCOT at the time of publication for current day plus the next 7.
-"""
-Ercot Load Forecast Endpoint
-"""
-const ercot_load_forecast = "https://api.ercot.com/api/public-reports/np3-566-cd/lf_by_model_study_area?"
-"""
-Ercot Zone Load Forecast Endpoint
-"""
-const ercot_zone_load_forecast = "https://api.ercot.com/api/public-reports/np3-565-cd/lf_by_model_weather_zone?"
-
-### Gen Forecasts URLS
-"""
-Solar System Forecast
-"""
-const solar_system_forecast = "https://api.ercot.com/api/public-reports/np4-737-cd/spp_hrly_avrg_actl_fcast?"
-"""
-Wind System Forecast
-"""
-const wind_system_forecast = "https://api.ercot.com/api/public-reports/np4-732-cd/wpp_hrly_avrg_actl_fcast?"
-
-### Energy Only Offers URLS - API hasn't added these data as of 2024-03-25
-const sixty_dam_energy_only_offers = "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_only_offers?"
-const sixty_dam_awards = "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_only_offer_awards?"
-const energybids = "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_bids?"
-
-## Generator data 
-const gen_data = "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_gen_res_data?"
-
-### Ancillary Services
-const twodayAS = "https://api.ercot.com/api/public-reports/np3-911-er/2d_agg_as_offers_ecrsm?"
-
-const sced_data = "https://api.ercot.com/api/public-reports/np3-965-er/60_sced_gen_res_data?"
+## Include Sced 
+include("sced.jl")
+include("load_data.jl")
 
 """
 
@@ -214,66 +174,6 @@ function trainingdata()
     return dat["alldata"]
 end
 
-
-function DA_energy_offers(; kwargs...)
-    # From/To Dates are individual days
-    from = get(kwargs, :from, Date(today()) - Dates.Day(89) )
-    to = get(kwargs, :to, from + Dates.Day(1))
-    onpeak = get(kwargs, :onpeak, true)
-    if onpeak
-        hefrom = 7
-        heto = 22
-    else
-        hefrom = 0
-        heto = 24
-    end
-    params = Dict("deliveryDateFrom" => string(from), 
-                "deliveryDateTo" => string(to), 
-                "hourEndingFrom" => string(hefrom),
-                "hourEndingTo" => string(heto),
-                "size" => "1000000", 
-                "energyOnlyOfferMW1From" => "5", 
-                "energyOnlyOfferMW1To" => "10000",
-                "energyOnlyOfferPrice1From" => "-40",
-                "energyOnlyOfferPrice1To" => "4000")
-    get_ercot_data(params, ErcotMagic.sixty_dam_energy_only_offers)
-end
-
-"""
-# Function to update the DA offer data
-## Focuses on on-peak offers (he 7-22)
-"""
-function update_da_offer_data()
-    ## starting Date(today()) - Dates.Day(89)
-    startdate = Date(today()) - Dates.Day(89)
-    enddate = Date(today()) - Dates.Day(60)
-    @showprogress for offerday in startdate:enddate
-        try
-            # check if already exists 
-            isfile("data/DA_energy_offers_"*string(offerday)*".csv") && continue
-            dat = DA_energy_offers(from=offerday, to=offerday+Dates.Day(1), onpeak=true)
-            #transform nothing to missing 
-            dat = ErcotMagic.nothing_to_missing.(dat)
-            CSV.write("data/DA_energy_offers_"*string(offerday)*".csv", dat)
-        catch e
-            println("Error on date: ", offerday)
-            println(e)
-        end
-    end
-end
-
-function average_da_mws(dat)
-    dat = rename(dat, replace.(names(dat), " " => "_"))
-    ## Remove dashes from the column names
-    dat = rename(dat, replace.(names(dat), "-" => "_"))
-    # Add all TPO MW's together
-    datmw = select(dat, r"Energy_Only_Offer_MW")
-    datmw = coalesce.(datmw, 0.0)
-    # get rowwise max of tpo cols 
-    dat.avg_max_DA_mw_offer = maximum.(eachrow(datmw))
-    ## group by Resource_Name, Resource_Type,  
-    dat = combine(groupby(dat, [:Settlement_Point, :QSE]), :avg_max_DA_mw_offer => mean)
-end
 
 """
 ### Get multiple days of Real-Time data 
