@@ -90,14 +90,16 @@ da_dat = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.da_prices,
 
 """
 function series_long(startdate::Date, enddate::Date; kwargs...)
-    settlementPoint = get(kwargs, :settlementPoint, "HB_NORTH")
+    settlementPoint = get(kwargs, :settlementPoint, nothing)
     hourly_avg = get(kwargs, :hourly_avg, false)
     series = get(kwargs, :lmp, ErcotMagic.rt_prices)
-    # split by day 
+    # split by day
     params = Dict("deliveryDateFrom" => string(startdate), 
-                "deliveryDateTo" => string(enddate),
-                "settlementPoint" => settlementPoint, 
-                "size" => "1000000")
+                  "deliveryDateTo" => string(enddate), 
+                  "size" => "1000000")
+    if settlementPoint !== nothing
+        params["settlementPoint"] = settlementPoint
+    end
     dat = get_ercot_data(params, series)
     if nrow(dat) == 0
         @warn "No data found for $series"
