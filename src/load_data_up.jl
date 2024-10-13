@@ -9,7 +9,7 @@ const da_prices = "https://api.ercot.com/api/public-reports/np4-190-cd/dam_stlmn
 """
 Real Time Prices
 """
-const rt_prices = "https://api.ercot.com/api/public-reports/np6-970-cd/rtd_lmp_node_zone_hub?"
+const rt_prices = "https://api.ercot.com/api/public-reports/np6-905-cd/spp_node_zone_hub?"
 
 ### Load Forecasts URLs
 # Hourly system-wide Mid-Term Load Forecasts (MTLFs) for all forecast models with an indicator for which forecast was in use by ERCOT at the time of publication for current day plus the next 7.
@@ -47,29 +47,62 @@ const sced_data = "https://api.ercot.com/api/public-reports/np3-965-er/60_sced_g
 
 ###################
 
+function normalize_columnnames!(df::DataFrame)
+    #rename 
+    rename!(df, replace.(names(df), " " => ""))
+    return df
+end
+
+function add_fiveminute_intervals!(df::DataFrame)
+    df.DATETIME = Dates.DateTime.(df.DeliveryDate) .+ Hour.(df.DeliveryHour) .+ Minute.(df.DeliveryInterval .* 5)    
+    return df
+end
+
+"""
+### Process 5 min RT LMP- see RTD indicative LMPs here: https://www.ercot.com/content/cdr/html/rtd_ind_lmp_lz_hb_HB_NORTH.html
+params = Dict("deliveryDateFrom" => "2024-02-01", 
+                "deliveryDateTo" => "2024-02-02", 
+                "settlementPoint" => "HB_NORTH",
+                "size" => "1000000")
+rt_dat = get_ercot_data(params, ErcotMagic.rt_prices)
+normalize_columnnames!(rt_dat)
+rt_dat = process_5min_settlements_to_hourly(rt_dat)
+"""
+function process_5min_settlements_to_hourly(df::DataFrame, val=:SettlementPointPrice)
+    df.DATETIME = Dates.DateTime.(df.DeliveryDate) .+ Hour.(df.DeliveryHour) 
+    df = combine(groupby(df, :DATETIME), val => mean => :RTLMP)
+    return df
+end
+
 ### Get multiple days of Data 
 
 """
 ### Get multiple days of Real-Time data 
-startdate = Date(2024, 2, 1)
-enddate = Date(2024, 2, 10)
-ex = realtime_lmp_long(Date(2024, 2, 1), Date(2024, 2, 4))
+using ErcotMagic, DataFrames, Dates
+startdate = Date(2022, 2, 1)
+enddate = Date(2024, 2, 1)
+ex = ErcotMagic.realtime_lmp_long(startdate, enddate)
 """
-function realtime_lmp_long(startdate::Date, enddate::Date, settlementPoint="HB_NORTH")
+function realtime_lmp_long(startdate::Date, enddate::Date; settlementPoint="HB_NORTH", hourly_avg=true, batchsize=45)
+    settlementPoint = 
     alldat = DataFrame[]
     # split by day 
-    alldays = [x for x in startdate:Day(1):enddate]
+    alldays = [x for x in startdate:Day(batchsize):enddate]
     for marketday in alldays 
         fromtime = DateTime(marketday)
-        totime = DateTime(marketday + Day(1))
-        params = Dict("RTDTimestampFrom" => string(fromtime), 
-                "RTDTimestampTo" => string(totime),
+        totime = DateTime(min(marketday + Day(batchsize-1), enddate))
+        params = Dict("deliveryDateFrom" => string(fromtime), 
+                "deliveryDateTo" => string(totime),
                 "settlementPoint" => settlementPoint, 
                 "size" => "1000000")
         rt_dat = get_ercot_data(params, ErcotMagic.rt_prices)
+        normalize_columnnames!(rt_dat)
+        if hourly_avg
+            rt_dat = process_5min_settlements_to_hourly(rt_dat)
+        end
         alldat = push!(alldat, rt_dat)
     end
-    out = vcat.(alldat)
+    out = vcat(alldat...)
     return out
 end
 

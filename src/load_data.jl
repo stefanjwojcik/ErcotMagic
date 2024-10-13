@@ -53,13 +53,12 @@ function normalize_columnnames!(df::DataFrame)
     return df
 end
 
-function add_fiveminute_intervals!(df::DataFrame)
-    df.DATETIME = Dates.DateTime.(df.DeliveryDate) .+ Hour.(df.DeliveryHour) .+ Minute.(df.DeliveryInterval .* 5)    
-    return df
+function add_fifteenmin_intervals!(df::DataFrame)
+    df.DATETIME = Dates.DateTime.(df.DeliveryDate) .+ Hour.(df.DeliveryHour) .+ Minute.(df.DeliveryInterval .* 15)    
 end
 
 """
-### Process 5 min RT LMP- see RTD indicative LMPs here: https://www.ercot.com/content/cdr/html/rtd_ind_lmp_lz_hb_HB_NORTH.html
+### Process 15 min RT LMP- see RTD indicative LMPs here: https://www.ercot.com/content/cdr/html/rtd_ind_lmp_lz_hb_HB_NORTH.html
 params = Dict("deliveryDateFrom" => "2024-02-01", 
                 "deliveryDateTo" => "2024-02-02", 
                 "settlementPoint" => "HB_NORTH",
@@ -68,9 +67,9 @@ rt_dat = get_ercot_data(params, ErcotMagic.rt_prices)
 normalize_columnnames!(rt_dat)
 rt_dat = process_5min_settlements_to_hourly(rt_dat)
 """
-function process_5min_settlements_to_hourly(df::DataFrame, val=:SettlementPointPrice)
+function process_15min_settlements_to_hourly(df::DataFrame, val=:SettlementPointPrice)
     df.DATETIME = Dates.DateTime.(df.DeliveryDate) .+ Hour.(df.DeliveryHour) 
-    df = combine(groupby(df, :DATETIME), val => mean => :RTLMP)
+    df = combine(groupby(df, :DATETIME), val => mean => val)
     return df
 end
 
@@ -79,83 +78,57 @@ end
 """
 ### Get multiple days of Real-Time data 
 using ErcotMagic, DataFrames, Dates
-startdate = Date(2022, 2, 1)
-enddate = Date(2024, 2, 1)
-ex = ErcotMagic.realtime_lmp_long(startdate, enddate)
+startdate = Date(2023, 12, 11)
+enddate = Date(2023, 12, 12)
+
+## GET RT LMP for HB_NORTH
+rt_dat = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.rt_prices, hourly_avg=true)
+rename!(rt_dat, Dict(:SettlementPointPrice => :RTLMP))
+
+## GET DA LMP for HB_NORTH
+da_dat = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.da_prices, hourly_avg=true)
+
 """
-function realtime_lmp_long(startdate::Date, enddate::Date; settlementPoint="HB_NORTH", hourly_avg=true, batchsize=45)
-    settlementPoint = 
-    alldat = DataFrame[]
+function series_long(startdate::Date, enddate::Date; kwargs...)
+    settlementPoint = get(kwargs, :settlementPoint, "HB_NORTH")
+    hourly_avg = get(kwargs, :hourly_avg, false)
+    series = get(kwargs, :lmp, ErcotMagic.rt_prices)
     # split by day 
-    alldays = [x for x in startdate:Day(batchsize):enddate]
-    for marketday in alldays 
-        fromtime = DateTime(marketday)
-        totime = DateTime(min(marketday + Day(batchsize-1), enddate))
-        params = Dict("deliveryDateFrom" => string(fromtime), 
-                "deliveryDateTo" => string(totime),
+    params = Dict("deliveryDateFrom" => string(startdate), 
+                "deliveryDateTo" => string(enddate),
                 "settlementPoint" => settlementPoint, 
                 "size" => "1000000")
-        rt_dat = get_ercot_data(params, ErcotMagic.rt_prices)
-        normalize_columnnames!(rt_dat)
-        if hourly_avg
-            rt_dat = process_5min_settlements_to_hourly(rt_dat)
-        end
-        alldat = push!(alldat, rt_dat)
+    dat = get_ercot_data(params, series)
+    if nrow(dat) == 0
+        @warn "No data found for $series"
+        return DataFrame()
     end
-    out = vcat(alldat...)
-    return out
+    normalize_columnnames!(dat)
+    if hourly_avg
+        dat = process_15min_settlements_to_hourly(dat)
+    end
+    return dat
 end
 
-"""
-### Get multiple days of Day-Ahead data
-startdate = Date(2024, 2, 1)
-enddate = Date(2024, 2, 10)
-ex = dayahead_lmp_long(Date(2024, 2, 1), Date(2024, 2, 4))
-"""
-function dayahead_lmp_long(startdate::Date, enddate::Date, settlementPoint="HB_NORTH")
-    alldat = DataFrame[]
-    # split by day 
-    alldays = [x for x in startdate:Day(1):enddate]
-    for marketday in alldays 
-        fromtime = string(marketday)
-        totime = string(marketday + Day(1))
-        params = Dict(
-                "deliveryDateFrom" => fromtime, 
-                "deliveryDateTo" => totime,
-                "settlementPoint" => settlementPoint, 
-                "size" => "1000000")
-        da_dat = get_ercot_data(params, ErcotMagic.da_prices)
-        alldat = push!(alldat, da_dat)
-    end
-    out = vcat(alldat...)
-    return out
-end
-
-
-"""
-## Load and gen take similar params 
-"""
-function load_gen_forecast_long(startdate::Date, enddate::Date, url)
-    alldat = DataFrame[]
-    # split by day 
-    alldays = [x for x in startdate:Day(1):enddate]
-    for marketday in alldays 
-        fromtime = string(marketday)
-        params = Dict("deliveryDateFrom" => fromtime, 
-                "deliveryDateTo" => fromtime)
-        lf_dat = get_ercot_data(params, url)
-        alldat = push!(alldat, lf_dat)
-    end
-    out = vcat(alldat...)
-    return out
-end
 
 """
 ## Create prediction frame
 """
-function create_prediction_frame(prediction_date::Date)
+function create_prediction_frame(prediction_date::Date; kwargs...)
+    startdate = prediction_date - Day(365)
+    # Check for existing data 
+    if isfile("data/prediction_frame_"*string(prediction_date)*".csv")
+        return CSV.read("data/prediction_frame_"*string(prediction_date)*".csv", DataFrame)
+    end
+    ## Pricing Data 
+    rt_lmp = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.rt_prices, hourly_avg=true)
+    rename!(rt_dat, Dict(:SettlementPointPrice => :RTLMP))
+    da_lmp = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.da_prices, hourly_avg=true)
+    rename!(da_dat, Dict(:SettlementPointPrice => :DALMP))
+
+
     # Get the data for the prediction date
-    load_forecast = load_gen_forecast_long(prediction_date, prediction_date, ercot_load_forecast)
+    load_forecast = ErcotMagic.series_long(prediction_date, prediction_date, ercot_load_forecast)
     gen_forecast = load_gen_forecast_long(prediction_date, prediction_date, solar_system_forecast)
     wind_forecast = load_gen_forecast_long(prediction_date, prediction_date, wind_system_forecast)
     

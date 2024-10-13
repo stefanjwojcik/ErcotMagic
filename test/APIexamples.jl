@@ -12,10 +12,11 @@ token = get_auth_token()
 params = Dict("deliveryDateFrom" => "2024-02-01", "deliveryDateTo" => "2024-02-25", "settlementPoint" => "HB_NORTH")
 da_dat = get_ercot_data(params, ErcotMagic.da_prices)
 
-# Real Time Prices for every five minutes 
-params = Dict("RTDTimestampFrom" => "2024-02-01T00:00:00", 
-                "RTDTimestampTo" => "2024-02-01T01:00:00",
-                "settlementPoint" => "HB_NORTH")
+# Real Time Prices for every five minutes - earliest available is 2023-12-11
+params = Dict("deliveryDateFrom" => "2023-12-11", 
+                "deliveryDateTo" => "2024-10-10", 
+                "settlementPoint" => "HB_NORTH",
+                "size" => "1000000")
 rt_dat = get_ercot_data(params, ErcotMagic.rt_prices)
 
 ## Load Forecast
@@ -24,7 +25,7 @@ lf_dat = get_ercot_data(params, ercot_load_forecast)
 
 ## Zone Load Forecast
 params = Dict("deliveryDateFrom" => "2024-02-21", "deliveryDateTo" => "2024-02-25")
-lf_dat = get_ercot_data(params, ercot_zone_load_forecast)
+lf_dat = get_ercot_data(params, ErcotMagic.ercot_zone_load_forecast)
 
 ## Solar System Forecast
 params = Dict("deliveryDateFrom" => "2024-02-21")
