@@ -5,6 +5,15 @@ using MLJ, XGBoost
 # disallow scalar GPU 
 DotEnv.config()
 
+function load_da_example()
+    ## GET DA LMP for HB_NORTH
+    da_dat = ErcotMagic.series_long(Date(2023, 12, 11), Date(2024, 10, 12), settlementPoint="HB_NORTH", series=ErcotMagic.da_prices, hourly_avg=false)
+    rename!(da_dat, Dict(:SettlementPointPrice => :DALMP))
+    da_dat.DATETIME = Dates.DateTime.(da_dat.DeliveryDate) .+ Hour.(parse_hour_ending_string.(da_dat.HourEnding))
+
+    return da_dat
+end
+
 ##################################################
 
 """

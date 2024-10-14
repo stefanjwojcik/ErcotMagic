@@ -24,6 +24,11 @@ Ercot Actual System Load
 const ercot_actual_load = "https://api.ercot.com/api/public-reports/np6-345-cd/act_sys_load_by_wzn?"
 
 """
+Ercot Outages
+"""
+const ercot_outages = "https://api.ercot.com/api/public-reports/np3-233-cd/hourly_res_outage_cap?"
+
+"""
 Ercot Zone Load Forecast Endpoint
 """
 const ercot_zone_load_forecast = "https://api.ercot.com/api/public-reports/np3-565-cd/lf_by_model_weather_zone?"
@@ -154,6 +159,10 @@ function create_prediction_frame(prediction_date::Date; kwargs...)
     load_for_dat = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.ercot_zone_load_forecast, hourly_avg=false)
     ## select SystemTotal, Model, InUseFlag, DeliveryDate, HourEnding 
     load_for_dat = select(load_dat, [:SystemTotal, :Model, :InUseFlag, :DeliveryDate, :HourEnding])
+    # Identify the official system forecast 
+    model_in_use = load_for_dat[load_for_dat.InUseFlag .== true, [:SystemTotal, :DATETIME]]
+    # Sum model_in_use by DATETIME
+    model_in_use = combine(groupby(model_in_use, :DATETIME), :SystemTotal => mean => :TotalLoadOfficial)
     load_for_dat.DATETIME = Dates.DateTime.(load_for_dat.DeliveryDate) .+ Hour.(parse_hour_ending_string.(load_for_dat.HourEnding))
     # unstack Model so that we have a column for each model
     load_for_dat = unstack(load_for_dat, :DATETIME, :Model, :SystemTotal, combine=mean)
@@ -163,11 +172,7 @@ function create_prediction_frame(prediction_date::Date; kwargs...)
     # Get the data for the prediction date
     solar_forecast = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.solar_system_forecast, hourly_avg=false)
     wind_forecast = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.wind_system_forecast, hourly_avg=false)
-    
-    # Assume weather data is available in a local CSV file
-    weather_data = CSV.read("weather_data.csv", DataFrame)
-    weather_data = filter(row -> row.date == prediction_date, weather_data)
-    
+        
     # Get lagged outcomes data
     startdate = prediction_date - Day(7)
     enddate = prediction_date - Day(1)
