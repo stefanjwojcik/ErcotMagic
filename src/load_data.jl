@@ -17,6 +17,12 @@ const rt_prices = "https://api.ercot.com/api/public-reports/np6-905-cd/spp_node_
 Ercot Load Forecast Endpoint
 """
 const ercot_load_forecast = "https://api.ercot.com/api/public-reports/np3-566-cd/lf_by_model_study_area?"
+
+"""
+Ercot Actual System Load 
+"""
+const ercot_actual_load = "https://api.ercot.com/api/public-reports/np6-345-cd/act_sys_load_by_wzn?"
+
 """
 Ercot Zone Load Forecast Endpoint
 """
@@ -88,11 +94,13 @@ rename!(rt_dat, Dict(:SettlementPointPrice => :RTLMP))
 ## GET DA LMP for HB_NORTH
 da_dat = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.da_prices, hourly_avg=true)
 
+## GET SYSTEM LOAD 
+load_dat = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.ercot_zone_load_forecast, hourly_avg=false)
 """
 function series_long(startdate::Date, enddate::Date; kwargs...)
     settlementPoint = get(kwargs, :settlementPoint, nothing)
     hourly_avg = get(kwargs, :hourly_avg, false)
-    series = get(kwargs, :lmp, ErcotMagic.rt_prices)
+    series = get(kwargs, :series, ErcotMagic.rt_prices)
     # split by day
     params = Dict("deliveryDateFrom" => string(startdate), 
                   "deliveryDateTo" => string(enddate), 
@@ -112,27 +120,49 @@ function series_long(startdate::Date, enddate::Date; kwargs...)
     return dat
 end
 
+function parse_hour_ending_string(x::String)
+    try 
+        x_s = split(x, ":")
+        parse(Int, x_s[1])
+    catch e
+        println("Error parsing: ", x)
+        return 0
+    end
+end
+
 
 """
 ## Create prediction frame
 """
 function create_prediction_frame(prediction_date::Date; kwargs...)
     startdate = prediction_date - Day(365)
+    enddate = prediction_date - Day(1)
     # Check for existing data 
     if isfile("data/prediction_frame_"*string(prediction_date)*".csv")
         return CSV.read("data/prediction_frame_"*string(prediction_date)*".csv", DataFrame)
     end
     ## Pricing Data 
-    rt_lmp = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.rt_prices, hourly_avg=true)
+    ## GET RT LMP for HB_NORTH
+    rt_dat = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.rt_prices, hourly_avg=true)
     rename!(rt_dat, Dict(:SettlementPointPrice => :RTLMP))
-    da_lmp = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.da_prices, hourly_avg=true)
+
+    ## GET DA LMP for HB_NORTH
+    da_dat = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.da_prices, hourly_avg=true)
     rename!(da_dat, Dict(:SettlementPointPrice => :DALMP))
 
+    ## GET SYSTEM LOAD 
+    load_for_dat = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.ercot_zone_load_forecast, hourly_avg=false)
+    ## select SystemTotal, Model, InUseFlag, DeliveryDate, HourEnding 
+    load_for_dat = select(load_dat, [:SystemTotal, :Model, :InUseFlag, :DeliveryDate, :HourEnding])
+    load_for_dat.DATETIME = Dates.DateTime.(load_for_dat.DeliveryDate) .+ Hour.(parse_hour_ending_string.(load_for_dat.HourEnding))
+    # unstack Model so that we have a column for each model
+    load_for_dat = unstack(load_for_dat, :DATETIME, :Model, :SystemTotal, combine=mean)
+    # Actual loads 
+    load_act_dat = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.ercot_actual_load, hourly_avg=false)
 
     # Get the data for the prediction date
-    load_forecast = ErcotMagic.series_long(prediction_date, prediction_date, ercot_load_forecast)
-    gen_forecast = load_gen_forecast_long(prediction_date, prediction_date, solar_system_forecast)
-    wind_forecast = load_gen_forecast_long(prediction_date, prediction_date, wind_system_forecast)
+    solar_forecast = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.solar_system_forecast, hourly_avg=false)
+    wind_forecast = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.wind_system_forecast, hourly_avg=false)
     
     # Assume weather data is available in a local CSV file
     weather_data = CSV.read("weather_data.csv", DataFrame)
