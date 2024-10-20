@@ -38,6 +38,7 @@ const ercot_zone_load_forecast = "https://api.ercot.com/api/public-reports/np3-5
 Solar System Forecast
 """
 const solar_system_forecast = "https://api.ercot.com/api/public-reports/np4-737-cd/spp_hrly_avrg_actl_fcast?"
+
 """
 Wind System Forecast
 """
@@ -107,9 +108,15 @@ function series_long(startdate::Date, enddate::Date; kwargs...)
     hourly_avg = get(kwargs, :hourly_avg, false)
     series = get(kwargs, :series, ErcotMagic.rt_prices)
     # split by day
-    params = Dict("deliveryDateFrom" => string(startdate), 
-                  "deliveryDateTo" => string(enddate), 
-                  "size" => "1000000")
+    params = Dict("size" => "1000000")
+    # if series is ercot_actual_load, then operatingDayFrom and operatingDayTo are used
+    if series == ercot_actual_load
+        params["operatingDayFrom"] = string(startdate)
+        params["operatingDayTo"] = string(enddate)
+    else 
+        params["deliveryDateFrom"] = string(startdate)
+        params["deliveryDateTo"] = string(enddate)
+    end
     if settlementPoint !== nothing
         params["settlementPoint"] = settlementPoint
     end
@@ -135,18 +142,27 @@ function parse_hour_ending_string(x::String)
     end
 end
 
-
-"""
-## Create prediction frame
-"""
-function create_prediction_frame(prediction_date::Date; kwargs...)
+## Function in process -- get and process all relevant data 
+function ercot_data(;kwargs...)
+    redownload = get(kwargs, :redownload, false)
     startdate = prediction_date - Day(365)
     enddate = prediction_date - Day(1)
-    # Check for existing data 
-    if isfile("data/prediction_frame_"*string(prediction_date)*".csv")
-        return CSV.read("data/prediction_frame_"*string(prediction_date)*".csv", DataFrame)
+    # Check for existing data in AWS 
+    predframe = download_csv_from_s3("ercotmagic", "prediction_frame.csv", "prediction_frame.csv")
+    predframe_exists = nrow(predframe) > 0
+    if predframe_exists
+        # Check the latest date in the prediction frame
+        latest_date = maximum(predframe.DATETIME)
+        # 
+        if latest_date <= latest_date
+            startdate = startdate
+        else
+            # Set the start date to the day after the latest date in the prediction frame
+            startdate = latest_date + Day(1)
+        end
     end
-    ## Pricing Data 
+
+        ## Pricing Data 
     ## GET RT LMP for HB_NORTH
     rt_dat = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.rt_prices, hourly_avg=true)
     rename!(rt_dat, Dict(:SettlementPointPrice => :RTLMP))
@@ -155,7 +171,7 @@ function create_prediction_frame(prediction_date::Date; kwargs...)
     da_dat = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.da_prices, hourly_avg=true)
     rename!(da_dat, Dict(:SettlementPointPrice => :DALMP))
 
-    ## GET SYSTEM LOAD 
+    ## GET SYSTEM LOAD Forecast 
     load_for_dat = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.ercot_zone_load_forecast, hourly_avg=false)
     ## select SystemTotal, Model, InUseFlag, DeliveryDate, HourEnding 
     load_for_dat = select(load_dat, [:SystemTotal, :Model, :InUseFlag, :DeliveryDate, :HourEnding])
@@ -172,17 +188,15 @@ function create_prediction_frame(prediction_date::Date; kwargs...)
     # Get the data for the prediction date
     solar_forecast = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.solar_system_forecast, hourly_avg=false)
     wind_forecast = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.wind_system_forecast, hourly_avg=false)
-        
-    # Get lagged outcomes data
-    startdate = prediction_date - Day(7)
-    enddate = prediction_date - Day(1)
-    outcomes_data = create_outcomes_df(startdate, enddate)
-    
-    # Merge the data
-    prediction_frame = innerjoin(load_forecast, gen_forecast, on = [:timestamp], makeunique=true)
-    prediction_frame = innerjoin(prediction_frame, wind_forecast, on = [:timestamp], makeunique=true)
-    prediction_frame = innerjoin(prediction_frame, weather_data, on = [:timestamp], makeunique=true)
-    prediction_frame = innerjoin(prediction_frame, outcomes_data, on = [:timestamp], makeunique=true)
-    
-    return prediction_frame
+end 
+
+
+"""
+## Create prediction frame
+
+"""
+function create_prediction_frame(prediction_date::Date; kwargs...)
+    rt_dat = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.rt_prices, hourly_avg=true)
+    rename!(rt_dat, Dict(:SettlementPointPrice => :RTLMP))
+    return rt_dat
 end
