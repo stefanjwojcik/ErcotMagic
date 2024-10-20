@@ -1,17 +1,28 @@
 ## Forecaster - uses recent values to predict future values
 
 using DotEnv, DataFrames, ProgressMeter, CUDA, ErcotMagic, Statistics
-using MLJ, XGBoost
+using MLJ, XGBoost, Dates
 # disallow scalar GPU 
 DotEnv.config()
 
-function load_da_example()
-    ## GET DA LMP for HB_NORTH
+function surrogate_curves()
+    
+    startdate = Date(2023, 12, 11)
+    enddate = Date(2023, 12, 12)
+
+    ## GET DA LMP Price Clears for HB_NORTH
     da_dat = ErcotMagic.series_long(Date(2023, 12, 11), Date(2024, 10, 12), settlementPoint="HB_NORTH", series=ErcotMagic.da_prices, hourly_avg=false)
     rename!(da_dat, Dict(:SettlementPointPrice => :DALMP))
-    da_dat.DATETIME = Dates.DateTime.(da_dat.DeliveryDate) .+ Hour.(parse_hour_ending_string.(da_dat.HourEnding))
+    da_dat.DATETIME = Dates.DateTime.(da_dat.DeliveryDate) .+ Hour.(ErcotMagic.parse_hour_ending_string.(da_dat.HourEnding))
+    ## Get Net Load: Load - Wind - Solar
+    load_act_dat = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.ercot_actual_load, hourly_avg=false)
+    load_act_dat.DATETIME = Dates.DateTime.(load_act_dat.OperatingDay) .+ Hour.(ErcotMagic.parse_hour_ending_string.(load_act_dat.HourEnding))
+    solar = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.solar_system_forecast, hourly_avg=false)
+    solar.DATETIME = Dates.DateTime.(solar.DeliveryDate) .+ Hour.(ErcotMagic.parse_hour_ending_string.(solar.HourEnding))
+    wind = ErcotMagic.series_long(startdate, enddate, series=ErcotMagic.wind_system_forecast, hourly_avg=false)
+    wind.DATETIME = Dates.DateTime.(wind.DeliveryDate) .+ Hour.(ErcotMagic.parse_hour_ending_string.(wind.HourEnding))
 
-    return da_dat
+
 end
 
 ##################################################
