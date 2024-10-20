@@ -29,6 +29,7 @@ nothing_to_missing(x) = isnothing(x) ? missing : x
 ## Include Sced 
 include("sced.jl")
 include("load_data.jl")
+include("aws.jl")
 
 """
 
