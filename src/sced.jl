@@ -1,5 +1,5 @@
 
-### Bulk downloading SCED data 
+### Bulk downloading SCED  data 
 function SCED_data(; kwargs...)
     from = get(kwargs, :from, DateTime(today()) - Dates.Day(89) + Dates.Hour(7))
     to = get(kwargs, :to, from + Dates.Hour(22))

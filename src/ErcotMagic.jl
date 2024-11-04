@@ -27,7 +27,8 @@ nothing_to_zero(x) = isnothing(x) ? 0.0 : x
 nothing_to_missing(x) = isnothing(x) ? missing : x
 
 ## Include Sced 
-include("sced.jl")
+include("constants.jl") # Contains all the URLS for the Ercot API 
+include("sced.jl") # Contains functions to process SCED data
 include("load_data.jl")
 include("aws.jl")
 
