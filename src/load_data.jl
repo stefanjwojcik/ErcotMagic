@@ -1,5 +1,6 @@
 ### Load ERCOT Data for Forecasting and Training
 
+## TODO: Deal with load forecasts 
 
 ###################
 
@@ -21,10 +22,12 @@ params = Dict("deliveryDateFrom" => "2024-02-01",
                 "settlementPoint" => "HB_NORTH",
                 "size" => "1000000")
 rt_dat = get_ercot_data(params, ErcotMagic.rt_prices)
+outages = get_ercot_data(params, ErcotMagic.ercot_outages)
 ErcotMagic.normalize_columnnames!(rt_dat)
 rt_dat = ErcotMagic.process_5min_settlements_to_hourly(rt_dat)
 """
-function process_5min_settlements_to_hourly(df::DataFrame, val=:SettlementPointPrice)
+function process_5min_settlements_to_hourly(df::DataFrame, ep::String)
+    #df[!, :DATETIME] = Dates.DateTime.(df[!, ep.datekey * "Date"]) .+ Hour.(df[!, ep.datekey * "Hour"])
     df.DATETIME = Dates.DateTime.(df.DeliveryDate) .+ Hour.(df.DeliveryHour) 
     df = combine(groupby(df, :DATETIME), val => mean => :RTLMP)
     return df
@@ -37,24 +40,23 @@ end
 startdate = Date(2024, 2, 1)
 enddate = Date(2024, 2, 10)
 
-## DA LMP
-ex = dayahead_lmp_long(Date(2024, 2, 1), Date(2024, 2, 4))
-
 ## Gen Forecast 
-gen = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4), url=ErcotMagic.solar_system_forecast)
+startdate = Date(2024, 2, 1)
+enddate = Date(2024, 2, 4)
+gen = ErcotMagic.batch_retrieve_data(startdate, enddate, "solar_prod_5min")
 
 ## Load Forecast
-load = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4), url=ErcotMagic.ercot_load_forecast)
+load = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4), "ercot_load_forecast")
+
+## Actual Load 
+actual_load = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4), "ercot_actual_load")
 
 ## RT LMP 
-addparams = Dict("settlementPoint" => "HB_NORTH")
-rt = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4), url=ErcotMagic.rt_prices, hourly_avg=true, additional_params=addparams)
+rt = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4), "rt_prices")
 """
-function batch_retrieve_data(startdate::Date, enddate::Date; kwargs...)
-    url = get(kwargs, :url, ErcotMagic.da_prices)
-    additional_params = get(kwargs, :additional_params, Dict())
-    hourly_avg = get(kwargs, :hourly_avg, false)
-    batchsize = get(kwargs, :batchsize, 45)
+function batch_retrieve_data(startdate::Date, enddate::Date, endpoint::String; kwargs...)
+    url = get(kwargs, :url, ErcotMagic.ENDPOINTS[endpoint][2])
+    batchsize = get(kwargs, :batchsize, 4)
     ###################################
     alldat = DataFrame[]
     # split by day 
@@ -62,9 +64,8 @@ function batch_retrieve_data(startdate::Date, enddate::Date; kwargs...)
     @showprogress for (i, marketday) in enumerate(alldays)
         fromtime = Date(marketday)
         totime = Date(min(marketday + Day(batchsize-1), enddate))
-        params = Dict("deliveryDateFrom" => string(fromtime), 
-                      "deliveryDateTo" => string(totime))
-        merge!(params, additional_params)
+        # update params for the batch 
+        params = ErcotMagic.APIparams(endpoint, fromtime, totime)
         ## GET THE DATA 
         dat = get_ercot_data(params, url)
         if isempty(dat)
@@ -72,28 +73,33 @@ function batch_retrieve_data(startdate::Date, enddate::Date; kwargs...)
             continue
         end
         normalize_columnnames!(dat)
-        if hourly_avg
-            rt_dat = process_5min_settlements_to_hourly(dat)
-        end
         alldat = push!(alldat, dat)
     end
     out = vcat(alldat...)
     return out
 end
 
+"""
+### Get forecast data in batches 
+"""
 
 """
 ## Create prediction frame
 """
-function create_prediction_frame(prediction_date::Date)
+function create_prediction_frame(prediction_date::Date; kwargs...)
+    start_date = Date(2024, 2, 1)
+    end_date = Date(2024, 2, 4)
     # Get the data for the prediction date
-    load_forecast = load_gen_forecast_long(prediction_date, prediction_date, ercot_load_forecast)
-    gen_forecast = load_gen_forecast_long(prediction_date, prediction_date, solar_system_forecast)
-    wind_forecast = load_gen_forecast_long(prediction_date, prediction_date, wind_system_forecast)
+    # additional params for loads - need posted datetime 
+    addparams = Dict("postedDatetimeFrom" => "$(start_date)T00:00:00Z", 
+                     "postedDatetimeTo" => "$(end_date)T23:59:59Z")
+    load_forecast = ErcotMagic.batch_retrieve_data(start_date, end_date, url=ErcotMagic.ercot_load_forecast)
+    solargen_forecast = ErcotMagic.batch_retrieve_data(start_date, end_date, url=ErcotMagic.solar_system_forecast)
+    windgen_forecast = ErcotMagic.batch_retrieve_data(start_date, end_date, url=ErcotMagic.wind_system_forecast)
     
-    # Assume weather data is available in a local CSV file
-    weather_data = CSV.read("weather_data.csv", DataFrame)
-    weather_data = filter(row -> row.date == prediction_date, weather_data)
+    # Net Load = Load - Solar - Wind
+    load_forecast.netload = load_forecast.LoadMW .- solargen_forecast.MW .- windgen_forecast.MW
+    
     
     # Get lagged outcomes data
     startdate = prediction_date - Day(7)
@@ -109,52 +115,3 @@ function create_prediction_frame(prediction_date::Date)
     return prediction_frame
 end
 
-################################
-function fetch_ercot_data(startdate::Date, enddate::Date; 
-    endpoint::Symbol, 
-    settlementPoint::String="HB_NORTH", 
-    hourly_avg::Bool=true, 
-    batchsize::Int=45, 
-    extra_params::Dict=Dict(), 
-    process_func::Function=identity)
-    alldat = DataFrame[]
-    alldays = [x for x in startdate:Day(batchsize):enddate]
-    @showprogress for (i, marketday) in enumerate(alldays)
-    fromtime = Date(marketday)
-    totime = Date(min(marketday + Day(batchsize-1), enddate))
-    params = Dict("deliveryDateFrom" => string(fromtime), 
-        "deliveryDateTo" => string(totime),
-        "settlementPoint" => settlementPoint, 
-        "size" => "1000000")
-    merge!(params, extra_params)
-    data = get_ercot_data(params, endpoint)
-    if isempty(data)
-    @warn "No data delivered for $(fromtime) to $(totime)"
-    continue
-    end
-    normalize_columnnames!(data)
-    data = process_func(data)
-    alldat = push!(alldat, data)
-    end
-    out = vcat(alldat...)
-    return out
-end
-
-# Example usage for real-time LMP
-function realtime_lmp_long(startdate::Date, enddate::Date; kwargs...)
-process_func = kwargs[:hourly_avg] ? process_5min_settlements_to_hourly : identity
-return fetch_ercot_data(startdate, enddate; 
-      endpoint=ErcotMagic.rt_prices, 
-      settlementPoint=kwargs[:settlementPoint], 
-      hourly_avg=kwargs[:hourly_avg], 
-      batchsize=kwargs[:batchsize], 
-      process_func=process_func)
-end
-
-# Example usage for day-ahead prices
-function day_ahead_prices(startdate::Date, enddate::Date; kwargs...)
-return fetch_ercot_data(startdate, enddate; 
-      endpoint=ErcotMagic.da_prices, 
-      settlementPoint=kwargs[:settlementPoint], 
-      batchsize=kwargs[:batchsize])
-end

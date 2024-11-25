@@ -169,6 +169,7 @@ function get_ercot_data(params, url)
     return parse_ercot_response(response)
 end
 
+
 ## Open Artifact Training Data: utility function using artifacts
 
 function trainingdata()
