@@ -1,24 +1,20 @@
 ## CONSTANTS and Configs for calling ERCOT API
 
 """
-## Function to convert the payload to parameters for the API call 
-ep = "da_prices"
-startdate = Date(2024, 2, 1)
-enddate = Date(2024, 2, 10)
-params = ErcotMagic.APIparams(ep, startdate, enddate)
+## ERCOT API Configurations
+# five min vs hourly 
+# posted vs non-posted 
+# unstacked vs stacked 
+# datekey + hourkey 
 """
-function APIparams(endpointname::String, startdate::Date, enddate::Date; settlement_point::String="HB_NORTH", additional_params=Dict())
-    datekey, url = ENDPOINTS[endpointname]
-    params = Dict(datekey * "From" => string(startdate), 
-                 datekey * "To" => string(enddate))
-    # IF endpoint contains "forecast", then add "postedDatetimeFrom" and "postedDatetimeTo"
-    # 24 hours before the startdate  
-    if occursin("prices", endpointname)
-        params["settlementPoint"] = settlement_point
-    end
-    params["size"] = "1000000"
-    merge!(params, additional_params)
-    return params
+mutable struct ErcotAPIConfig
+    datekey::String
+    hourkey::String
+    intervalkey::String
+    endpoint::String
+    url::String
+    posted::Bool
+    stacked::Bool
 end
 
 ## Moving to a single constants dictionary 
@@ -41,6 +37,29 @@ const ENDPOINTS = Dict(
     "solar_prod_5min" => ("intervalEnding", "https://api.ercot.com/api/public-reports/np4-738-cd/spp_actual_5min_avg_values?"),
     "binding_constraints" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np6-86-cd/shdw_prices_bnd_trns_const?")
 )
+
+
+"""
+## Function to convert the payload to parameters for the API call 
+ep = "da_prices"
+startdate = Date(2024, 2, 1)
+enddate = Date(2024, 2, 10)
+params = ErcotMagic.APIparams(ep, startdate, enddate)
+"""
+function APIparams(endpointname::String, startdate::Date, enddate::Date; settlement_point::String="HB_NORTH", additional_params=Dict())
+    datekey, url = ENDPOINTS[endpointname]
+    params = Dict(datekey * "From" => string(startdate), 
+                 datekey * "To" => string(enddate))
+    # IF endpoint contains "forecast", then add "postedDatetimeFrom" and "postedDatetimeTo"
+    # 24 hours before the startdate  
+    if occursin("prices", endpointname)
+        params["settlementPoint"] = settlement_point
+    end
+    params["size"] = "1000000"
+    merge!(params, additional_params)
+    return params
+end
+
 
 ### Prices URLS
 """
