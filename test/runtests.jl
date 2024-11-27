@@ -31,6 +31,7 @@ end
     ## 
     daprices = ErcotMagic.batch_retrieve_data(startdate, enddate, "da_prices", additional_params=addparams)
     @test nrow(daprices) > 0
+
     ErcotMagic.add_datetime!(daprices, "da_prices")
     rtprices = ErcotMagic.batch_retrieve_data(startdate, enddate, "rt_prices", additional_params=addparams)
     @test nrow(rtprices) > 0 
@@ -43,11 +44,25 @@ end
     eo = ErcotMagic.batch_retrieve_data(startdate, enddate, "ercot_outages", additional_params=addparams)
     @test nrow(eo) > 0
     ssf = ErcotMagic.batch_retrieve_data(startdate, enddate, "solar_system_forecast", additional_params=addparams)
-    @test ssf > 0 
+    @test nrow(ssf) > 0 
     wsf = ErcotMagic.batch_retrieve_data(startdate, enddate, "wind_system_forecast", additional_params=addparams)
-    @test wsf > 0
+    @test nrow(wsf) > 0
     wp5m = ErcotMagic.batch_retrieve_data(startdate, enddate, "wind_prod_5min", additional_params=addparams)
-    @test wp5m > 0 
+    @test nrow(wp5m) > 0 
     sp5m = ErcotMagic.batch_retrieve_data(startdate, enddate, "solar_prod_5min", additional_params=addparams)
-    @test sp5m > 0 
+    @test nrow(sp5m) > 0 
+end
+
+@testset "adding dates to data from all the endpoints" begin 
+    endpoints = ["da_prices", "rt_prices", "ercot_load_forecast", "ercot_zone_load_forecast", "ercot_actual_load", "ercot_outages", "solar_system_forecast", "wind_system_forecast", "wind_prod_5min", "solar_prod_5min"]
+    startdate, enddate = today()-Day(7), today()-Day(7)
+    addparams = Dict("size" => "20")
+    dataframearray = DataFrame[]
+    for ep in endpoints
+        dat = ErcotMagic.batch_retrieve_data(startdate, enddate, ep, additional_params=addparams)
+        push!(dataframearray, dat)
+        @test nrow(dat) > 0
+        ErcotMagic.add_datetime!(dat, ep)
+        @test "DATETIME" ∈ names(dat)
+    end
 end
