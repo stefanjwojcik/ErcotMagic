@@ -9,6 +9,14 @@
 # datekey + OperatingDate + HourEnding - ercot outages (need to filter by Posted DateTime) (The total outage column is TotalResource*)
 # 
 
+function parse_hour_ending(date::DateTime, hour_ending::String)
+    if hour_ending == "24:00"
+        return date + Hour(Time("00:00")) + Day(1)
+    else
+        return date + Hour(Time(hour_ending, "HH:MM"))
+    end
+end
+
 
 function add_datetime!(df::DataFrame, endpoint::String)
     datekey, url = ErcotMagic.ENDPOINTS[endpoint]
@@ -19,7 +27,7 @@ function add_datetime!(df::DataFrame, endpoint::String)
     elseif datekey == "deliveryDate" && endpoint == "rt_prices"
         df.DATETIME = DateTime.(df[!, :DeliveryDate]) .+ Hour.(df[!, :DeliveryHour]) .+ Minute.(df[!, :DeliveryInterval] .* 5)
     else
-        df.DATETIME = DateTime.(df[!, :DeliveryDate]) .+ Hour.(df[!, :HourEnding])
+        df.DATETIME = parse_hour_ending.(DateTime.(df[!, "DeliveryDate"]), df[!, :HourEnding])
     end
 end
 

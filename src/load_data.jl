@@ -57,6 +57,7 @@ rt = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4), "rt_pric
 function batch_retrieve_data(startdate::Date, enddate::Date, endpoint::String; kwargs...)
     url = get(kwargs, :url, ErcotMagic.ENDPOINTS[endpoint][2])
     batchsize = get(kwargs, :batchsize, 4)
+    additional_params = get(kwargs, :additional_params, Dict())
     ###################################
     alldat = DataFrame[]
     # split by day 
@@ -65,7 +66,7 @@ function batch_retrieve_data(startdate::Date, enddate::Date, endpoint::String; k
         fromtime = Date(marketday)
         totime = Date(min(marketday + Day(batchsize-1), enddate))
         # update params for the batch 
-        params = ErcotMagic.APIparams(endpoint, fromtime, totime)
+        params = ErcotMagic.APIparams(endpoint, fromtime, totime, additional_params=additional_params)
         ## GET THE DATA 
         dat = get_ercot_data(params, url)
         if isempty(dat)
