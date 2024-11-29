@@ -21,63 +21,45 @@ function parse_hour_ending(date::DateTime, hour_ending::Int64)
     return date + Hour(hour_ending)
 end
 
-"""
-## Add datetime to the data frame 
-"""
-function add_datetime!(df::DataFrame, endpoint::String)
-    datekey, url = ErcotMagic.ENDPOINTS[endpoint]
-    if datekey == "intervalEnding"
-        df.DATETIME = DateTime.(df[!, :IntervalEnding])
-    elseif datekey == "operatingDate"
-        df.DATETIME = DateTime.(df[!, :OperatingDate]) .+ Hour.(df[!, :HourEnding])
-    elseif datekey == "operatingDay" 
-        df.DATETIME = parse_hour_ending.(DateTime.(df[!, "OperatingDay"]), df[!, :HourEnding])
-    elseif datekey == "deliveryDate" && endpoint == "rt_prices"
-        df.DATETIME = DateTime.(df[!, :DeliveryDate]) .+ Hour.(df[!, :DeliveryHour]) .+ Minute.(df[!, :DeliveryInterval] .* 5)
-    else
-        df.DATETIME = parse_hour_ending.(DateTime.(df[!, "DeliveryDate"]), df[!, :HourEnding])
-    end
-end
 
 """
 # Alternative datetime version that is simpler 
 """
 function add_datetime!(df::DataFrame)
-    for col in names(df)
-        if "DeliveryInterval" ∈ names(df)
-            df.DATETIME = DateTime.(df[!, "DeliveryDate"]) .+ Hour.(df[!, "DeliveryHour"]) .+ Minute.(df[!, col] .* 5)
-            return 
-        elseif "IntervalEnding" ∈ names(df)
-            df.DATETIME = DateTime.(df[!, col])
-            return
-        elseif "OperatingDay" ∈ names(df)
-            df.DATETIME = parse_hour_ending.(DateTime.(df[!, col]), df[!, "HourEnding"])
-            return
-        elseif "DeliveryHour" ∈ names(df)
-            df.DATETIME = DateTime.(df[!, "DeliveryDate"]) .+ Hour.(df[!, col])
-            return
-        elseif "DeliveryDate" ∈ names(df)
-            df.DATETIME = parse_hour_ending.(DateTime.(df[!, col]), df[!, "HourEnding"])
-            return
-        end
+    if "DeliveryInterval" ∈ names(df)
+        df.DATETIME = DateTime.(df[!, "DeliveryDate"]) .+ Hour.(df[!, "DeliveryHour"]) .+ Minute.(df[!, "DeliveryInterval"] .* 5)
+        return 
+    elseif "IntervalEnding" ∈ names(df)
+        df.DATETIME = DateTime.(df[!, "IntervalEnding"])
+        return
+    elseif "OperatingDay" ∈ names(df)
+        df.DATETIME = parse_hour_ending.(DateTime.(df[!, "OperatingDay"]), df[!, "HourEnding"])
+        return
+    elseif "OperatingDate" ∈ names(df)
+        df.DATETIME = parse_hour_ending.(DateTime.(df[!, "OperatingDate"]), df[!, "HourEnding"])
+        return
+    elseif "DeliveryHour" ∈ names(df)
+        df.DATETIME = DateTime.(df[!, "DeliveryDate"]) .+ Hour.(df[!, "DeliveryHour"])
+        return
+    elseif "DeliveryDate" ∈ names(df)
+        df.DATETIME = parse_hour_ending.(DateTime.(df[!, "DeliveryDate"]), df[!, "HourEnding"])
+        return
     end
 end
 
-
-
-function detect_date_type(df::DataFrame, column::Symbol)
-    date_pattern = r"^\d{4}-\d{2}-\d{2}$"
-    datetime_pattern = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$"
-    time_pattern = r"^\d{2}:\d{2}(:\d{2})?$"
-    
-    for value in df[!, column]
-        if occursin(date_pattern, value)
-            return "date"
-        elseif occursin(datetime_pattern, value)
-            return "datetime"
-        elseif occursin(time_pattern, value)
-            return "time"
-        end
+"""
+# Filter by Posted or PostedDateTime for Forecast data 
+"""
+function filter_forecast_by_posted!(df::DataFrame, days_back=1)
+    if "DATETIME" ∉ names(df)
+        @warn "No DATETIME column in the DataFrame, attempting to add"
+        add_datetime!(df)
     end
-    return "unknown"
+    if "Posted" ∈ names(df)
+        df = filter(row -> DateTime(row.Posted) .<= (row.DATETIME - Day(days_back)) , df)
+        # Now, group by the DATETIME and get the latest forecast
+        df = combine(groupby(df, :DATETIME), val -> first(val, 1))
+        nrow(df) == 0 && @warn "No data found for the specified date range"
+        return df
+    end
 end
