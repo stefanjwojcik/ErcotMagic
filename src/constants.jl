@@ -39,6 +39,18 @@ const ENDPOINTS = Dict(
     "sced_data" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-965-er/60_sced_gen_res_data?")
 )
 
+function get_non_sced_endpoints()
+    return  ["da_prices", 
+    "rt_prices", 
+    "ercot_load_forecast", 
+    "ercot_zone_load_forecast", 
+    "ercot_actual_load", 
+    "ercot_outages", 
+    "solar_system_forecast",
+    "wind_system_forecast",
+    "system_lambda", 
+    "binding_constraints"]
+end
 
 """
 ## Function to convert the payload to parameters for the API call 
