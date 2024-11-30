@@ -7,20 +7,68 @@ using MLJ, XGBoost, Dates
 
 function surrogate_curves()
     
-    startdate = Date(2024, 2, 11)
-    enddate = Date(2024, 2, 12)
+    startdate = today() - Day(7)
+    enddate = today() - Day(1)
 
+    addparams = Dict("size" => "1000000")
     ## Actual load
-    actual_load_endpoint = ErcotMagic.Ercotpayload("ercot_actual_load")
-    actual_load = ErcotMagic.batch_retrieve_data(startdate, enddate, actual_load_endpoint)
-    #outages = ErcotMagic.batch_retrieve_data(startdate, enddate, url=ErcotMagic.ercot_outages, custom_params=customparams)
+    actual_load = ErcotMagic.batch_retrieve_data(startdate, enddate, "ercot_actual_load", additional_params=addparams)
+    ErcotMagic.add_datetime!(actual_load)
+    # drop hour ending and DSTFlag 
+    select!(actual_load, [:DATETIME, :Total])
+    ## Get outages 
+    outages = ErcotMagic.batch_retrieve_data(startdate, enddate, "ercot_outages", additional_params=addparams)
+    ErcotMagic.add_datetime!(outages)
+    outages = ErcotMagic.filter_actuals_by_posted(outages)
+    outages.OUTAGES = outages.TotalResourceMWZoneHouston .+ outages.TotalResourceMWZoneNorth .+ outages.TotalResourceMWZoneSouth .+ outages.TotalResourceMWZoneWest
+    select!(outages, [:DATETIME, :OUTAGES])
     # Solar and Wind Generation
-    solar_gen = ErcotMagic.batch_retrieve_data(startdate, enddate, url=ErcotMagic.solar_system_forecast)
-    wind_gen = ErcotMagic.batch_retrieve_data(startdate, enddate, url=ErcotMagic.wind_system_forecast)
-
-
+    solar_gen = ErcotMagic.batch_retrieve_data(startdate, enddate, "solar_system_forecast", additional_params=addparams)
+    solar_actuals = ErcotMagic.filter_actuals_by_posted(solar_gen)
+    select!(solar_actuals, [:DATETIME, :GenerationSystemWide])
+    rename!(solar_actuals, :GenerationSystemWide => :SOLAR)
+    wind_gen = ErcotMagic.batch_retrieve_data(startdate, enddate, "wind_system_forecast", additional_params=addparams)
+    wind_actuals = ErcotMagic.filter_actuals_by_posted(wind_gen)
+    select!(wind_actuals, [:DATETIME, :GenerationSystemWide])
+    rename!(wind_actuals, :GenerationSystemWide => :WIND)
+    ## Net Load = Load - Solar - Wind - Outages
+    dat = innerjoin(actual_load, solar_actuals, on=:DATETIME)
+    dat = innerjoin(dat, wind_actuals, on=:DATETIME)
+    dat = innerjoin(dat, outages, on=:DATETIME)
+    dat[!, :NETLOAD] = dat[!, :Total] .- dat[!, :SOLAR] .- dat[!, :WIND] 
+    ## DA price clears 
+    lambda_prices = ErcotMagic.batch_retrieve_data(startdate, enddate, "system_lambda", additional_params=addparams)
+    ErcotMagic.add_datetime!(lambda_prices)
+    select!(lambda_prices, [:DATETIME, :SystemLambda])
+    ## RT price clears
+    #rtprices = ErcotMagic.batch_retrieve_data(startdate, enddate, "rt_prices", additional_params=addparams)
+    #ErcotMagic.add_datetime!(rtprices)
+    #select!(rtprices, [:DATETIME, :SettlementPoint, :SettlementPointPrice])
+    #rename!(rtprices, :SettlementPointPrice => :RTPRICE)
+    dat = innerjoin(dat, lambda_prices, on=:DATETIME)
+    dat.day = Date.(dat.DATETIME)
 
 end
+
+"""
+## Function to generate realized price curves 
+- takes start date, enddate, and additional parameters
+-get actual load, solar, wind, system_lambda
+- calculate actual net load 
+
+"""
+function realized_curves(; kwargs...)
+    forecast_endpoints = ["solar_system_forecast", "wind_system_forecast"]
+    startdate = today() - Day(7)
+    enddate = today() - Day(1)
+    addparams = Dict("size" => "1000000")
+    ## Actual load
+    actual_load = ErcotMagic.batch_retrieve_data(startdate, enddate, "ercot_actual_load", additional_params=addparams)
+    ## System Lambda 
+    lambda_prices = ErcotMagic.batch_retrieve_data(startdate, enddate, "system_lambda", additional_params=addparams)
+    ErcotMagic.add_datetime!.([actual_load, lambda_prices])
+end
+
 
 ##################################################
 

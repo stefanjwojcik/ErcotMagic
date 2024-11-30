@@ -21,6 +21,7 @@ end
 const ENDPOINTS = Dict(
     "da_prices" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np4-190-cd/dam_stlmnt_pnt_prices?"),
     "rt_prices" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np6-905-cd/spp_node_zone_hub?"),
+    "system_lambda" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np4-523-cd/dam_system_lambda?"),
     "ercot_load_forecast" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-566-cd/lf_by_model_study_area?"),
     "ercot_zone_load_forecast" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-565-cd/lf_by_model_weather_zone?"),
     "ercot_actual_load" => ("operatingDay", "https://api.ercot.com/api/public-reports/np6-345-cd/act_sys_load_by_wzn?"),

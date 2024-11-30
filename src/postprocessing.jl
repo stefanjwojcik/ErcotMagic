@@ -48,15 +48,35 @@ function add_datetime!(df::DataFrame)
 end
 
 """
-# Filter by Posted or PostedDateTime for Forecast data 
+# Filter by Posted or PostedDateTime for Forecast data in order to get the latest forecast
 """
-function filter_forecast_by_posted!(df::DataFrame, days_back=1)
+function filter_forecast_by_posted(df::DataFrame, days_back=1)
     if "DATETIME" ∉ names(df)
         @warn "No DATETIME column in the DataFrame, attempting to add"
         add_datetime!(df)
     end
     if "Posted" ∈ names(df)
         df = filter(row -> DateTime(row.Posted) .<= (row.DATETIME - Day(days_back)) , df)
+        # Now, group by the DATETIME and get the latest forecast
+        df = combine(groupby(df, :DATETIME), val -> first(val, 1))
+        nrow(df) == 0 && @warn "No data found for the specified date range"
+        return df
+    end
+end
+
+"""
+# Filter by Posted or PostedDateTime for Forecast data in order to get actuals 
+
+ssf = ErcotMagic.batch_retrieve_data(today() - Day(7), today() - Day(1), "solar_system_forecast")
+hi = ErcotMagic.filter_forecast_by_posted(ssf)
+"""
+function filter_actuals_by_posted(df::DataFrame, days_back=1)
+    if "DATETIME" ∉ names(df)
+        @warn "No DATETIME column in the DataFrame, attempting to add"
+        add_datetime!(df)
+    end
+    if "Posted" ∈ names(df)
+        df = filter(row -> DateTime(row.Posted) .>= row.DATETIME, df)
         # Now, group by the DATETIME and get the latest forecast
         df = combine(groupby(df, :DATETIME), val -> first(val, 1))
         nrow(df) == 0 && @warn "No data found for the specified date range"

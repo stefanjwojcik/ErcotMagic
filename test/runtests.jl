@@ -62,7 +62,26 @@ end
         dat = ErcotMagic.batch_retrieve_data(startdate, enddate, ep, additional_params=addparams)
         push!(dataframearray, dat)
         @test nrow(dat) > 0
-        ErcotMagic.add_datetime!(dat, ep)
+        ErcotMagic.add_datetime!(dat)
         @test "DATETIME" ∈ names(dat)
+    end
+end
+
+@testset "Filtering Methods for Forecasts" begin 
+    startdate, enddate = today()-Day(7), today()
+    addparams = Dict("size" => "1000000")
+    ## 
+    endpoints = ["ercot_load_forecast", "ercot_zone_load_forecast", "ercot_outages", "solar_system_forecast", "wind_system_forecast"]
+    dataframearray = DataFrame[]
+    for ep in endpoints
+        dat = ErcotMagic.batch_retrieve_data(startdate, enddate, ep, additional_params=addparams)
+        push!(dataframearray, dat)
+        @test nrow(dat) > 0
+        ErcotMagic.add_datetime!(dat)
+        @test "DATETIME" ∈ names(dat)
+        # Calculate the difference between posted and DATETIME 
+        dat = ErcotMagic.filter_forecast_by_posted(dat)
+        dat.daysdiff = Dates.value.(dat.DATETIME .- DateTime.(dat.Posted)) ./ (24*60*60_000)
+        @test all(x -> 1.0 <= x <= 1.5, dat.daysdiff)
     end
 end
