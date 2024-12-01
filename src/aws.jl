@@ -1,9 +1,29 @@
-# Install the required package
-#using Pkg
-#Pkg.add("AWSS3")
+## AWS S3 Functions
 
-# Import the package
-using AWSS3
+"""
+## Function to get the files in the "ercotmagic" bucket
+"""
+function awsfiles(bucket::String="ercotmagic")
+    path = S3Path("s3://$bucket")
+    return readdir(path)
+end
+
+"""
+## Function to parse datetimes, if any, in the filename
+
+parse_date_from_filename("data_2024-02-01.csv")
+
+parse_date_from_filename("data_2024-02-01T20:37:12.csv")
+"""
+function parse_date_from_filename(filename::String)
+    date_regex = r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})"
+    dmatch = match(date_regex, filename)
+    if !isnothing(dmatch)
+        return DateTime(dmatch.match)
+    else
+        return nothing
+    end
+end
 
 """
 # Function to upload a CSV file to an S3 bucket
