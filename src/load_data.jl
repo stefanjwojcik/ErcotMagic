@@ -4,12 +4,6 @@
 
 ###################
 
-function normalize_columnnames!(df::DataFrame)
-    #rename 
-    rename!(df, replace.(names(df), " " => ""))
-    return df
-end
-
 function add_fiveminute_intervals!(df::DataFrame)
     df.DATETIME = Dates.DateTime.(df.DeliveryDate) .+ Hour.(df.DeliveryHour) .+ Minute.(df.DeliveryInterval .* 5)    
     return df
@@ -74,45 +68,10 @@ function batch_retrieve_data(startdate::Date, enddate::Date, endpoint::String; k
             continue
         end
         normalize_columnnames!(dat)
+        add_datetime!(dat)
         alldat = push!(alldat, dat)
     end
     out = vcat(alldat...)
     return out
-end
-
-"""
-### Get forecast data in batches 
-"""
-
-"""
-## Create prediction frame
-"""
-function create_prediction_frame(prediction_date::Date; kwargs...)
-    start_date = Date(2024, 2, 1)
-    end_date = Date(2024, 2, 4)
-    # Get the data for the prediction date
-    # additional params for loads - need posted datetime 
-    addparams = Dict("postedDatetimeFrom" => "$(start_date)T00:00:00Z", 
-                     "postedDatetimeTo" => "$(end_date)T23:59:59Z")
-    load_forecast = ErcotMagic.batch_retrieve_data(start_date, end_date, url=ErcotMagic.ercot_load_forecast)
-    solargen_forecast = ErcotMagic.batch_retrieve_data(start_date, end_date, url=ErcotMagic.solar_system_forecast)
-    windgen_forecast = ErcotMagic.batch_retrieve_data(start_date, end_date, url=ErcotMagic.wind_system_forecast)
-    
-    # Net Load = Load - Solar - Wind
-    load_forecast.netload = load_forecast.LoadMW .- solargen_forecast.MW .- windgen_forecast.MW
-    
-    
-    # Get lagged outcomes data
-    startdate = prediction_date - Day(7)
-    enddate = prediction_date - Day(1)
-    outcomes_data = create_outcomes_df(startdate, enddate)
-    
-    # Merge the data
-    prediction_frame = innerjoin(load_forecast, gen_forecast, on = [:timestamp], makeunique=true)
-    prediction_frame = innerjoin(prediction_frame, wind_forecast, on = [:timestamp], makeunique=true)
-    prediction_frame = innerjoin(prediction_frame, weather_data, on = [:timestamp], makeunique=true)
-    prediction_frame = innerjoin(prediction_frame, outcomes_data, on = [:timestamp], makeunique=true)
-    
-    return prediction_frame
 end
 

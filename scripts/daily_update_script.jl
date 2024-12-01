@@ -6,21 +6,7 @@ function generate_plan()
     # Get files in the ercotmagic bucket
     files = ErcotMagic.awsfiles()
     # Get the last updated date for each file 
-\end 
-
-function process_one_endpoint(startdate, enddate, endpoint, addparams; type="forecast", last_updated=::String)
-    data = ErcotMagic.batch_retrieve_data(startdate, enddate, endpoint, additional_params=addparams)
-    ErcotMagic.add_datetime!(data, endpoint)
-    if type == "forecast"
-        data = ErcotMagic.filter_forecast_by_posted(data)
-    elseif type == "actuals"
-        data = ErcotMagic.filter_actuals_by_posted(data)
-    end
-    fileout = tempname() * ".csv"
-    CSV.write(fileout, data)
-    ErcotMagic.upload_csv_to_s3("ercotmagic", fileout, "$endpoint$last_updated.csv")
-    @info "Data for $endpoint uploaded to S3"
-end
+end 
 
 
 function daily_update()
