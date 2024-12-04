@@ -95,13 +95,14 @@ end
 """
 ## Function to process one endpoint - get and standardize the data
 
+addparams = Dict("size" => "1000000")
 actual_load = ErcotMagic.process_one_endpoint(startdate, enddate, "ercot_actual_load", additional_params=addparams)
 
 ssf = ErcotMagic.process_one_endpoint(startdate, enddate, "solar_system_forecast", additional_params=addparams)
 
 """
-function process_one_endpoint(startdate, enddate, endpoint, addparams)
-    data = ErcotMagic.batch_retrieve_data(startdate, enddate, endpoint, additional_params=addparams)
+function process_one_endpoint(startdate::Date, enddate::Date, endpoint::String; additional_params::Dict=Dict())
+    data = ErcotMagic.batch_retrieve_data(startdate, enddate, endpoint, additional_params=additional_params)
     ErcotMagic.postprocess_endpoint_data!(data) ## standardize dates
     actuals, forecasts = ErcotMagic.actuals_and_forecasts(data) # cleaves actuals and forecast values 
     ## Actuals and forecasts are not nothing, then "stack and label" 
@@ -110,6 +111,7 @@ function process_one_endpoint(startdate, enddate, endpoint, addparams)
         forecasts = ErcotMagic.stack_and_label(forecasts, endpoint .* "_forecasts")
         data = vcat(actuals, forecasts)
     else 
+        # Stack the values on top and label by the endpoint 
         data = ErcotMagic.stack_and_label(data, endpoint)
     end
     ## 
@@ -126,7 +128,7 @@ function filter_forecast_by_posted(df::DataFrame, days_back=1)
         @warn "No DATETIME column in the DataFrame, attempting to add"
         add_datetime!(df)
     end
-    if "Posted" ∈ names(df)
+    if "Posted" ∈ names(df) && sum(ismissing, df.Posted) == 0
         df = filter(row -> DateTime(row.Posted) .<= (row.DATETIME - Day(days_back)) , df)
         # Now, group by the DATETIME and get the latest forecast
         df = combine(groupby(df, :DATETIME), val -> first(val, 1))
@@ -146,7 +148,7 @@ function filter_actuals_by_posted(df::DataFrame, days_back=1)
         @warn "No DATETIME column in the DataFrame, attempting to add"
         add_datetime!(df)
     end
-    if "Posted" ∈ names(df)
+    if "Posted" ∈ names(df) && sum(ismissing, df.Posted) == 0
         df = filter(row -> DateTime(row.Posted) .>= row.DATETIME, df)
         # Now, group by the DATETIME and get the latest forecast
         df = combine(groupby(df, :DATETIME), val -> first(val, 1))
