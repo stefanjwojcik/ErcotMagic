@@ -65,6 +65,11 @@ function APIparams(endpointname::String, startdate::Date, enddate::Date; settlem
                  datekey * "To" => string(enddate))
     # IF endpoint contains "forecast", then add "postedDatetimeFrom" and "postedDatetimeTo"
     # 24 hours before the startdate  
+    if occursin("binding_constraints", endpointname)
+        params = Dict()
+        params["SCEDTimestampFrom"] = string(DateTime(startdate))
+        params["SCEDTimestampTo"] = string(DateTime(enddate))
+    end
     if occursin("prices", endpointname)
         params["settlementPoint"] = settlement_point
     end

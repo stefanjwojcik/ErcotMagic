@@ -67,6 +67,9 @@ function standardize_datetime_cols!(df::DataFrame)
     if "Posted" ∉ names(df)
         df.Posted .= missing
     end
+    if "DSTFlag" ∉ names(df)
+        df.DSTFlag .= missing
+    end
     nothing
 end
 
