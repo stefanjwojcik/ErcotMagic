@@ -2,14 +2,14 @@
 ### Bulk downloading SCED  data 
 function SCED_data(; kwargs...)
     from = get(kwargs, :from, DateTime(today()) - Dates.Day(89) + Dates.Hour(7))
-    to = get(kwargs, :to, from + Dates.Hour(22))
+    to = get(kwargs, :to, from + Dates.Day(30))
     params = Dict("SCEDTimestampFrom" => string(from), 
                 "SCEDTimestampTo" => string(to), 
                 "size" => "1000000", 
-                #"resourceType" => "SCGT90", 
+                #"resourceType" => "PVGR", 
                 "submittedTPOPrice1From" => "-40", # wind comes at -40
                 "submittedTPOPrice1To" => "4000", 
-                "submittedTPOMW1From" => "5", #minimum volumetric bid 
+                "submittedTPOMW1From" => "2", #minimum volumetric bid 
                 "submittedTPOMW1To" => "10000", 
                 "telemeteredResourceStatus" => "ON") #  
     get_ercot_data(params, ErcotMagic.sced_data)
