@@ -11,6 +11,7 @@
 function normalize_columnnames!(df::DataFrame)
     #rename 
     rename!(df, replace.(names(df), " " => ""))
+    rename!(df, replace.(names(df), "-" => "_"))
     return df
 end
 
