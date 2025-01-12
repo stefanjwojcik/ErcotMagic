@@ -10,7 +10,7 @@ end
 
 """
 ## ostreacultura_bq_auth()
-- If you are switching projects, you need to run gcloud init to set the project.
+- If you are switching projects, you need to run gcloud config set project nanocentury to set the project.
 - Activate the service account using the credentials file
 """
 function bq_auth()
