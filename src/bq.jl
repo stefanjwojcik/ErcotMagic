@@ -10,11 +10,13 @@ end
 
 """
 ## ostreacultura_bq_auth()
+- If you are switching projects, you need to run gcloud init to set the project.
 - Activate the service account using the credentials file
 """
 function bq_auth()
-    if isfile("ercotmagic-credentials.json")
-        run(`gcloud auth activate-service-account --key-file=ercotmagic-credentials.json`)
+    auth_path =joinpath(homedir(),".ercotmagic/nanocentury-credentials.json")
+    if isfile(auth_path)
+        run(`gcloud auth activate-service-account --key-file=$auth_path`)
     else
         println("Credentials file not found")
     end
@@ -101,7 +103,7 @@ Arguments:
 
 # Example usage
 df = DataFrame(text = ["Alice", "Bob"], embed = [rand(3), rand(3)])
-send_to_bq_table(df, "climate_truth", "embtest")
+send_to_bq_table(df, "ercot", "embtest")
 
 # Upload a DataFrame
 using CSV, DataFrames
