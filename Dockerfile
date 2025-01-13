@@ -17,19 +17,19 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.c
     apt-get update && apt-get install -y google-cloud-sdk
 
 # Create a directory for the service account key and set permissions
-RUN mkdir -p /root/.gcloud && chown -R juliauser:juliauser /root/.gcloud
+RUN mkdir -p /home/juliauser/.gcloud/
 
 # Copy the service account key file into the container
-COPY ~/.ercotmagic/nanocentury-credentials.json /root/.gcloud/key.json
+#COPY /home/swojcik/.ercotmagic/nanocentury-credentials.json /root/.gcloud/key.json
 
 # Set environment variables for Google Cloud SDK
-ENV GOOGLE_APPLICATION_CREDENTIALS="/root/.gcloud/key.json"
+ENV GOOGLE_APPLICATION_CREDENTIALS="/home/juliauser/.gcloud/key.json"
 
 # Authenticate using the service account
-RUN gcloud auth activate-service-account --key-file=/root/.gcloud/key.json
+#RUN gcloud auth activate-service-account --key-file=/root/.gcloud/key.json
 
 # Set the project (replace 'your-project-id' with your actual project ID)
-RUN gcloud config set project nanocentury
+#RUN gcloud config set project nanocentury
 
 # Switch to the non-root user
 USER juliauser
