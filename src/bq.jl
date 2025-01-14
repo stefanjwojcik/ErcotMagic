@@ -14,12 +14,16 @@ end
 - Activate the service account using the credentials file
 """
 function bq_auth()
-    auth_path =joinpath(homedir(),".ercotmagic/nanocentury-credentials.json")
+    auth_path =joinpath(homedir(),".gcloud", "key.json")
     if isfile(auth_path)
         run(`gcloud auth activate-service-account --key-file=$auth_path`)
     else
         println("Credentials file not found")
     end
+end
+
+function bq_set_project(project::String)
+    run(`gcloud config set project $project`)
 end
 
 """

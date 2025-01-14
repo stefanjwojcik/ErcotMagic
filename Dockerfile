@@ -47,10 +47,10 @@ RUN mkdir -p /home/juliauser/.julia/config && \
 COPY . /home/juliauser/ErcotMagic
 
 # Install Julia packages in the project environment
-RUN julia -e 'cd("/home/juliauser/ErcotMagic"); using Pkg; Pkg.activate("."); Pkg.instantiate();'
+RUN julia -e 'cd("/home/juliauser/ErcotMagic"); using Pkg; Pkg.add("Revise"); Pkg.activate("."); Pkg.instantiate();'
 
 RUN mkdir -p /home/juliauser/.julia/config 
-COPY startup.jl /home/juliauser/.julia/config/startup.jl
+#COPY startup.jl /home/juliauser/.julia/config/startup.jl
 
 # Set the environment variable for Python
 #ENV PATH="/venv/bin:$PATH:/usr/local/julia/bin:/usr/local/bin"
