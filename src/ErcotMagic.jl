@@ -31,7 +31,7 @@ include("constants.jl") # Contains all the URLS for the Ercot API
 include("postprocessing.jl")
 include("sced.jl") # Contains functions to process SCED data
 include("load_data.jl")
-include("aws.jl")
+include("bq.jl")
 
 """
 
