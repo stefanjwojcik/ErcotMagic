@@ -36,7 +36,10 @@ const ENDPOINTS = Dict(
     "energybids" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_bids?"),
     "gen_data" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_gen_res_data?"),
     "twodayAS" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-911-er/2d_agg_as_offers_ecrsm?"),
-    "sced_data" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-965-er/60_sced_gen_res_data?")
+    "sced_data" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-965-er/60_sced_gen_res_data?"),
+    "sced_energy_only_offers" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_only_offers?"),
+    "sced_gen_as_data" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_gen_res_as_offers?"), 
+    "sced_load_data" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_load_res_data?")
 )
 
 function get_non_sced_endpoints()
