@@ -50,6 +50,12 @@ function add_datetime!(df::DataFrame)
     elseif "DeliveryDate" ∈ names(df)
         df.DATETIME = parse_hour_ending.(DateTime.(df[!, "DeliveryDate"]), df[!, "HourEnding"])
         return
+    elseif "SCEDTimestamp" ∈ names(df)
+        df.DATETIME = DateTime.(df[!, "SCEDTimestamp"])
+        return
+    else
+        @warn "No datetime columns found in the DataFrame"
+        return
     end
 end
 
@@ -59,7 +65,7 @@ end
 - Adds 'Posted' column if not present 
 """
 function standardize_datetime_cols!(df::DataFrame)
-    alt_date_cols = ["DeliveryDate", "DeliveryHour", "DeliveryInterval", "IntervalEnding", "OperatingDay", "OperatingDate", "HourEnding"]
+    alt_date_cols = ["DeliveryDate", "DeliveryHour", "DeliveryInterval", "IntervalEnding", "OperatingDay", "OperatingDate", "HourEnding", "SCEDTimestamp"]
     for col in alt_date_cols
         if col ∈ names(df)
             select!(df, Not(col))
@@ -103,6 +109,8 @@ addparams = Dict("size" => "1000000")
 actual_load = ErcotMagic.process_one_endpoint(startdate, enddate, "ercot_actual_load", additional_params=addparams)
 
 ssf = ErcotMagic.process_one_endpoint(startdate, enddate, "solar_system_forecast", additional_params=addparams)
+
+constraints = ErcotMagic.process_one_endpoint(startdate, enddate, "binding_constraints", additional_params=addparams)
 
 """
 function process_one_endpoint(startdate::Date, enddate::Date, endpoint::String; additional_params::Dict=Dict())
