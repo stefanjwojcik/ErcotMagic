@@ -21,6 +21,7 @@ services:
     volumes:
       - .:/home/juliauser/ErcotMagic
       - /home/swojcik/.ercotmagic/nanocentury-credentials.json:/home/juliauser/.gcloud/key.json
+      - /home/swojcik/.julia/config/startup.jl:/home/juliauser/.julia/config/startup.jl
     #ports:
       #- "8080:8080"
     environment:

@@ -20,13 +20,10 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.c
 RUN mkdir -p /home/juliauser/.gcloud/
 
 # Copy the service account key file into the container
-#COPY /home/swojcik/.ercotmagic/nanocentury-credentials.json /root/.gcloud/key.json
+#COPY /home/swojcik/.ercotmagic/nanocentury-credentials.json /home/juliauser/.gcloud/key.json
 
 # Set environment variables for Google Cloud SDK
-ENV GOOGLE_APPLICATION_CREDENTIALS="/home/juliauser/.gcloud/key.json"
-
-# Authenticate using the service account
-#RUN gcloud auth activate-service-account --key-file=/root/.gcloud/key.json
+#ENV GOOGLE_APPLICATION_CREDENTIALS="/home/juliauser/.gcloud/key.json"
 
 # Set the project (replace 'your-project-id' with your actual project ID)
 #RUN gcloud config set project nanocentury
@@ -50,7 +47,7 @@ COPY . /home/juliauser/ErcotMagic
 RUN julia -e 'cd("/home/juliauser/ErcotMagic"); using Pkg; Pkg.add("Revise"); Pkg.activate("."); Pkg.instantiate();'
 
 RUN mkdir -p /home/juliauser/.julia/config 
-#COPY startup.jl /home/juliauser/.julia/config/startup.jl
+#COPY /home/swojcik/.julia/config/startup.jl /home/juliauser/.julia/config/startup.jl
 
 # Set the environment variable for Python
 #ENV PATH="/venv/bin:$PATH:/usr/local/julia/bin:/usr/local/bin"
