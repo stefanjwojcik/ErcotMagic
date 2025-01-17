@@ -19,8 +19,10 @@ Make sure all Ercot User and Password are stored in the environment variables `E
 - [X] SCED Data Loading Functions
     - [X] Update long-term data 
     - [X] Get minimum volumetric energy offer price
-    - [X] Get DA Energy offers
+    - [ ] Parse Energy Only offers
+    - [ ] Parse Ancillary Service offers
 - [ ] Add tests
-- [ ] Add CI/CD
+- [ ] Add Docker Support
+- [ ] Launch Daily Data Update Image
 - [ ] Add Documentation
 - [ ] Add examples
