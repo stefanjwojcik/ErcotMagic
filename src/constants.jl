@@ -73,9 +73,9 @@ function APIparams(endpointname::String, startdate::Date, enddate::Date; settlem
         params["SCEDTimestampFrom"] = string(DateTime(startdate))
         params["SCEDTimestampTo"] = string(DateTime(enddate))
     end
-    if occursin("prices", endpointname)
-        params["settlementPoint"] = settlement_point
-    end
+    #if occursin("prices", endpointname)
+    #    params["settlementPoint"] = settlement_point
+    #end
     params["size"] = "1000000"
     merge!(params, additional_params)
     return params
