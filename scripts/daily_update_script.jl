@@ -1,5 +1,5 @@
 ## Script to run daily to update the data from the API
-using ErcotMagic 
+using ErcotMagic, Dates, DataFrames 
 ## This script is used to update the data from the API. It is run daily to get the latest data. The data is then saved in a csv file and pushed to an S3 bucket.
 
 function daily_nonsced_update(;kwargs...)

@@ -16,6 +16,12 @@ Make sure all Ercot User and Password are stored in the environment variables `E
     - [X] Solar Generation
     - [X] Total Generation
     - [X] Be able to fill in long stretches of time with batched calls to the API
+- [X] BigQuery Dynamic Loading 
+    - [X] Generate tables for each endpoint 
+    - [X] Determine the latest date available (if any)
+    - [X] Load Data with a specific date range
+    - [X] Set up Cron Job to update data daily
+
 - [X] SCED Data Loading Functions
     - [X] Update long-term data 
     - [X] Get minimum volumetric energy offer price
