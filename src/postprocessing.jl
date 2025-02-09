@@ -124,7 +124,7 @@ function process_one_endpoint(startdate::Date, enddate::Date, endpoint::String; 
         data = vcat(actuals, forecasts)
     else 
         # Stack the values on top and label by the endpoint 
-        data = ErcotMagic.stack_and_label(data, endpoint)
+        data = data #ErcotMagic.stack_and_label(data, endpoint)
     end
     ## 
     return data
