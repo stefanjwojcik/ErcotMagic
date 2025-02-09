@@ -95,6 +95,7 @@ function postprocess_endpoint_data!(df::DataFrame)
     nothing
 end
 
+## DEPRECATED 
 function stack_and_label(df::DataFrame, endpoint::String; id_cols = Not([:DATETIME, :Posted, :DSTFlag]))
     @assert "DATETIME" ∈ names(df) "DATETIME column not found in the DataFrame"
     df = stack(df, id_cols)
