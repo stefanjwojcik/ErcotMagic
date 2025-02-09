@@ -13,8 +13,8 @@ end
 - If you are switching projects, you need to run gcloud config set project nanocentury to set the project.
 - Activate the service account using the credentials file
 """
-function bq_auth()
-    auth_path =joinpath(homedir(),".gcloud", "key.json")
+function bq_auth(keyname::String="nanocentury-credentials.json")
+    auth_path =joinpath(homedir(),".ercotmagic", keyname)
     if isfile(auth_path)
         run(`gcloud auth activate-service-account --key-file=$auth_path`)
     else
@@ -105,16 +105,9 @@ Arguments:
   - dataset_name: The BigQuery dataset name
   - table_name: The BigQuery table name
 
-# Example usage
-df = DataFrame(text = ["Alice", "Bob"], embed = [rand(3), rand(3)])
-send_to_bq_table(df, "ercot", "embtest")
-
-# Upload a DataFrame
-using CSV, DataFrames
-import OstreaCultura as OC
-tdat = CSV.read("data/climate_test.csv", DataFrame)
-emb = OC.multi_embeddings(tdat)
-
+# Example usage to send a DataFrame to a BigQuery table
+da = ErcotMagic.batch_retrieve_data(Date(2023, 12, 13), Date(2023, 12, 13), "da_prices")
+ErcotMagic.send_to_bq_table(da[1:2,:], "ercot", "da_prices")
 
 """
 function send_to_bq_table(df::DataFrame, dataset_name::String, table_name::String)
@@ -147,7 +140,14 @@ Example: bq("SELECT * FROM ostreacultura.climate_truth.training LIMIT 10")
 """
 function bq(query::String)
     tname = tempname()
-    run(pipeline(`bq query --use_legacy_sql=false --format=csv $query`, tname))
+    #err_file = tempname()
+    try
+        run(pipeline(`bq query --use_legacy_sql=false --format=csv $query`, tname, tname))
+    catch e
+        println("Error running query: $query")
+        println(read(tname, String))
+        return nothing
+    end
     return CSV.read(tname, DataFrame)
 end
 
