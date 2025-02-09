@@ -9,7 +9,7 @@ function read_json(file_path::String)
 end
 
 """
-## ostreacultura_bq_auth()
+## bq_auth()
 - If you are switching projects, you need to run gcloud config set project nanocentury to set the project.
 - Activate the service account using the credentials file
 """
