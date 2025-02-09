@@ -48,6 +48,9 @@ actual_load = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4),
 ## RT LMP 
 rt = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4), "rt_prices")
 
+## DA LMP
+da = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4), "da_prices")
+
 ## Binding Constraints 
 bc = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4), "binding_constraints")
 """
