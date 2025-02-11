@@ -138,11 +138,11 @@ end
 
 Example: bq("SELECT * FROM ostreacultura.climate_truth.training LIMIT 10")
 """
-function bq(query::String)
+function bq(query::String, querylimit = "1000000000000")
     tname = tempname()
     #err_file = tempname()
     try
-        run(pipeline(`bq query --use_legacy_sql=false --format=csv $query`, tname, tname))
+        run(pipeline(`bq query --maximum_bytes_billed=$querylimit --use_legacy_sql=false --format=csv $query`, tname, tname))
     catch e
         println("Error running query: $query")
         println(read(tname, String))
@@ -151,6 +151,19 @@ function bq(query::String)
     return CSV.read(tname, DataFrame)
 end
 
+"""
+## Partition table by date
+"""
+function partition_table(table::String)
+    query = """
+    CREATE OR REPLACE TABLE $table
+    PARTITION BY DATE(CAST(DATETIME AS DATETIME))
+    AS
+    SELECT *
+    FROM $table
+    """
+    return query
+end
 
 """
 ## Function to average embeddings over some group 
