@@ -10,8 +10,7 @@ function SCED_data(; kwargs...)
                 "submittedTPOPrice1From" => "-40", # wind comes at -40
                 "submittedTPOPrice1To" => "4000", 
                 "submittedTPOMW1From" => "2", #minimum volumetric bid 
-                "submittedTPOMW1To" => "10000", 
-                "telemeteredResourceStatus" => "ON") #  
+                "submittedTPOMW1To" => "10000") #  
     get_ercot_data(params, ErcotMagic.sced_data)
 end
 

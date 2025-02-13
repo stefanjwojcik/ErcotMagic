@@ -20,11 +20,16 @@ According to the forums, pricing data for current products is only available sta
     - [X] Total Generation
     - [X] Be able to fill in long stretches of time with batched calls to the API
 - [X] BigQuery Dynamic Loading 
-    - [] Generate tables for each endpoint 
-    - [] Determine the latest date available (if any)
-    - [] Load Data with a specific date range
-    - [] Set up Cron Job to update data daily
-
+    - [ ] Generate tables for each endpoint 
+    - [ ] Determine the latest date available (if any)
+    - [ ] Load Data with a specific date range
+    - [ ] Set up Cron Job to update data daily
+- [ ] Interesting Features 
+    - [ ] SCEDDY - A tool to determine the optimal energy offer price for a given day
+    - [ ] Stack - Generates an expected price curve for a given day based on historical data and net load for the coming day 
+    - [ ] Proxy - Generates spreads of DART for a given day based on historical data  (net load, generation, outages, etc)
+    - [ ] Replay - Training data for a BESS RL model 
+    - [ ] Congest - Generates congestion prices for a given day based on historical data
 - [X] SCED Data Loading Functions
     - [X] Update long-term data 
     - [X] Get minimum volumetric energy offer price
