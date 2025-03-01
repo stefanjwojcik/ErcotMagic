@@ -1,6 +1,40 @@
 
+"""
+### Bulk downloading pure SCED AS Load Data 
+as_data = ErcotMagic.SCED_as()
+ErcotMagic.normalize_columnames!(as_data)
+"""
+function SCED_load_as(; kwargs...)
+    from = get(kwargs, :from, today() - Dates.Day(89) )
+    to = get(kwargs, :to, from + Dates.Day(2))
+    params = Dict("deliveryDateFrom" => string(from), 
+                "deliveryDateTo" => string(to), 
+                "size" => "1000000") #  
+    get_ercot_data(params, ErcotMagic.sced_load_as)
+end
+
+function SCED_twoday_as(; kwargs...)
+    from = get(kwargs, :from, today() - Dates.Day(89) )
+    to = get(kwargs, :to, from + Dates.Day(2))
+    params = Dict("deliveryDateFrom" => string(from), 
+                "deliveryDateTo" => string(to), 
+                "size" => "1000000") #  
+    get_ercot_data(params, ErcotMagic.twoday_as)
+end
+
+"""
+
+function SCED_gen_as(; kwargs...)
+    from = get(kwargs, :from, today() - Dates.Day(89) )
+    to = get(kwargs, :to, from + Dates.Day(2))
+    params = Dict("deliveryDateFrom" => string(from), 
+                "deliveryDateTo" => string(to), 
+                "size" => "1000000") #  
+    get_ercot_data(params, ErcotMagic.sced_gen_as)
+end
+
 ### Bulk downloading pure Generation Resource SCED  data 
-function SCED_data(; kwargs...)
+function SCED_gen_data(; kwargs...)
     from = get(kwargs, :from, DateTime(today()) - Dates.Day(89) + Dates.Hour(7))
     to = get(kwargs, :to, from + Dates.Day(30))
     params = Dict("SCEDTimestampFrom" => string(from), 
@@ -11,7 +45,7 @@ function SCED_data(; kwargs...)
                 "submittedTPOPrice1To" => "4000", 
                 "submittedTPOMW1From" => "2", #minimum volumetric bid 
                 "submittedTPOMW1To" => "10000") #  
-    get_ercot_data(params, ErcotMagic.sced_data)
+    get_ercot_data(params, ErcotMagic.sced_gen_data)
 end
 
 """
@@ -25,11 +59,11 @@ function update_sced_data()
     @showprogress for offerday in startdate:enddate
         try
             ## does this data exist? if so skip
-            isfile("data/SCED_data_"*string(offerday)*".csv") && continue
-            dat = SCED_data(from=DateTime(offerday) + Dates.Hour(7), 
+            isfile("data/SCED_gen_data_"*string(offerday)*".csv") && continue
+            dat = SCED_gen_data(from=DateTime(offerday) + Dates.Hour(7), 
                             to=DateTime(offerday)+Dates.Hour(22))
             dat = ErcotMagic.nothing_to_missing.(dat)
-            CSV.write("data/SCED_data_"*string(offerday)*".csv", dat)
+            CSV.write("data/SCED_gen_data_"*string(offerday)*".csv", dat)
         catch e
             println("Error on date: ", i)
             println(e)
