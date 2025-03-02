@@ -21,6 +21,7 @@ end
 const ENDPOINTS = Dict(
     "da_prices" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np4-190-cd/dam_stlmnt_pnt_prices?"),
     "rt_prices" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np6-905-cd/spp_node_zone_hub?"),
+    "ancillary_prices" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np4-188-cd/dam_clear_price_for_cap?"),
     "system_lambda" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np4-523-cd/dam_system_lambda?"),
     "ercot_load_forecast" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-566-cd/lf_by_model_study_area?"),
     "ercot_zone_load_forecast" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-565-cd/lf_by_model_weather_zone?"),
@@ -36,7 +37,7 @@ const ENDPOINTS = Dict(
     "energybids" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_bids?"),
     "gen_data" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_gen_res_data?"),
     "twodayAS" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-911-er/2d_agg_as_offers_ecrsm?"),
-    "sced_data" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-965-er/60_sced_gen_res_data?"),
+    "sced_gen_data" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-965-er/60_sced_gen_res_data?"),
     "sced_energy_only_offers" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_only_offers?"),
     "sced_gen_as_data" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_gen_res_as_offers?"), 
     "sced_load_data" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_load_res_data?")
@@ -139,10 +140,15 @@ const energybids = "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_e
 const gen_data = "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_gen_res_data?"
 
 ### Ancillary Services
-const twodayAS = "https://api.ercot.com/api/public-reports/np3-911-er/2d_agg_as_offers_ecrsm?"
+const ancillary_prices = "https://api.ercot.com/api/public-reports/np4-188-cd/dam_clear_price_for_cap?"
 
-const sced_data = "https://api.ercot.com/api/public-reports/np3-965-er/60_sced_gen_res_data?"
+const twodayECRSclears = "https://api.ercot.com/api/public-reports/np3-911-er/2d_cleared_dam_as_ecrsm?"
 
+const sced_gen_data = "https://api.ercot.com/api/public-reports/np3-965-er/60_sced_gen_res_data?"
+
+const sced_load_as = "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_load_res_as_offers?"
+
+const sced_gen_as = "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_gen_res_as_offers?"
 
 """
 ### Binding Constraints and Shadow PRices 

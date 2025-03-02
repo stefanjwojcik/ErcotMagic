@@ -51,6 +51,9 @@ rt = ErcotMagic.batch_retrieve_data(Date(2023, 12, 13), Date(2024, 2, 4), "rt_pr
 ## DA LMP
 da = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4), "da_prices")
 
+## Ancillary Prices 
+anc = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4), "ancillary_prices")
+
 ## Binding Constraints 
 bc = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4), "binding_constraints")
 """

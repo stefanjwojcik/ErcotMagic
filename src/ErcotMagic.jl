@@ -1,6 +1,7 @@
 module ErcotMagic
 
 # Core API page: https://apiexplorer.ercot.com/
+# Docs: https://developer.ercot.com/applications/pubapi/user-guide/openapi-documentation/
 
 using HTTP
 using JSON
@@ -15,7 +16,7 @@ export get_auth_token,
         get_ercot_data, 
         trainingdata, 
         nothing_to_zero,
-        SCED_data,
+        SCED_gen_data,
         update_sced_data,
         average_sced_prices,
         average_sced_mws,

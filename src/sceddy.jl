@@ -13,17 +13,6 @@ function SCED_load_as(; kwargs...)
     get_ercot_data(params, ErcotMagic.sced_load_as)
 end
 
-function SCED_twoday_as(; kwargs...)
-    from = get(kwargs, :from, today() - Dates.Day(89) )
-    to = get(kwargs, :to, from + Dates.Day(2))
-    params = Dict("deliveryDateFrom" => string(from), 
-                "deliveryDateTo" => string(to), 
-                "size" => "1000000") #  
-    get_ercot_data(params, ErcotMagic.twoday_as)
-end
-
-"""
-
 function SCED_gen_as(; kwargs...)
     from = get(kwargs, :from, today() - Dates.Day(89) )
     to = get(kwargs, :to, from + Dates.Day(2))
@@ -41,10 +30,11 @@ function SCED_gen_data(; kwargs...)
                 "SCEDTimestampTo" => string(to), 
                 "size" => "1000000", 
                 #"resourceType" => "PVGR", 
-                "submittedTPOPrice1From" => "-40", # wind comes at -40
-                "submittedTPOPrice1To" => "4000", 
-                "submittedTPOMW1From" => "2", #minimum volumetric bid 
-                "submittedTPOMW1To" => "10000") #  
+                #"submittedTPOPrice1From" => "-40", # wind comes at -40
+                #"submittedTPOPrice1To" => "4000", 
+                #"submittedTPOMW1From" => "2", #minimum volumetric bid 
+                #"submittedTPOMW1To" => "10000"
+    ) 
     get_ercot_data(params, ErcotMagic.sced_gen_data)
 end
 
