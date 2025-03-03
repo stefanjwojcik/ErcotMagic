@@ -26,6 +26,7 @@ end
 function SCED_gen_data(; kwargs...)
     from = get(kwargs, :from, DateTime(today()) - Dates.Day(89) + Dates.Hour(7))
     to = get(kwargs, :to, from + Dates.Day(30))
+    addparams = get(kwargs, :addparams, Dict())
     params = Dict("SCEDTimestampFrom" => string(from), 
                 "SCEDTimestampTo" => string(to), 
                 "size" => "1000000", 
@@ -35,6 +36,7 @@ function SCED_gen_data(; kwargs...)
                 #"submittedTPOMW1From" => "2", #minimum volumetric bid 
                 #"submittedTPOMW1To" => "10000"
     ) 
+    merge!(params, addparams)
     get_ercot_data(params, ErcotMagic.sced_gen_data)
 end
 
