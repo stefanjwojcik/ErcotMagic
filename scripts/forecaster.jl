@@ -59,7 +59,7 @@ end
     dat.pred[151:end] .= predict(model, test)
     sort!(dat, :DATETIME)
     ## now plot the training and test set over datetime 
-    plot(dat.DATETIME, [dat.SystemLambda, dat.pred], label=["actual" "predicted"], xlabel="Date", ylabel="System Lambda", title="System Lambda vs Stack", legend=:topleft)
+    plot(dat.DATETIME, [dat.SystemLambda, dat.pred], label=["actual" "predicted"], xlabel="Date", ylabel="System Clearing Price", title="Price ~ Net Load", legend=:topleft)
 
 """
 function simple_linear_model!(dat)
