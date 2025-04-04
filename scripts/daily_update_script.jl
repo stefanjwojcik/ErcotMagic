@@ -4,12 +4,15 @@ using ErcotMagic, Dates, DataFrames
 
 ErcotMagic.bq_auth()
 
+# Idea is to dynamically update the Bigquery Data 
 function get_start_date(endpoint::String)
     bq_start_date = ErcotMagic.bq("SELECT MAX(DATETIME(DATETIME)) FROM ercot." * endpoint)
     bq_start_date = isnothing(bq_start_date) ? Date(2023, 12, 13) : Date(bq_start_date[1, 1])
     return bq_start_date + Day(1)
 end
 
+# Function to update the non-SCED data
+# This function is used to update the non-SCED data from the API. It is run daily to get the latest data. The data is then saved in a csv file and pushed to a BigQuery table.
 function daily_nonsced_update(;kwargs...)
     addparams = Dict("size" => "1000000")
     #last_updated = ErcotMagic.get_last_updated()
@@ -36,4 +39,5 @@ end
 
 ## Now Function to Update the SCED Data 
 function daily_sced_update()
+    nothing
 end

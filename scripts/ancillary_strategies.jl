@@ -22,3 +22,20 @@ sced_load_noble = filter(:LoadResourceName => x -> contains(x, r"NOBLESLR_BESS1"
 
 # Price clears fors for a given date range
 anc = ErcotMagic.batch_retrieve_data(start_date, end_date, "ancillary_prices")
+
+# Get generation awards in SCED - actual awards 
+sced_gen_awards = ErcotMagic.batch_retrieve_data(start_date, end_date, "gen_data", addparams=Dict("resourceName" => "NOBLESLR_BESS1"))
+
+filter(:ResourceName => x -> contains(x, r"NOBLESLR_BESS1"), sced_gen_awards)
+
+filter(:ResourceName => x -> contains(x, r"NOBLESLR_SOLAR1"), sced_gen_awards)
+
+function coalescenothing!(df::DataFrame)
+    # Convert all columns to allow `missing`
+    allowmissing!(df)
+
+    # Replace `nothing` with `missing` in all columns
+    foreach(col -> replace!(col, nothing => missing), eachcol(df))
+end
+
+############
