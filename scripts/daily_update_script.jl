@@ -11,6 +11,46 @@ function get_start_date(endpoint::String)
     return bq_start_date + Day(1)
 end
 
+## Hourly Settlement Prices - DA/RT/Ancillaries/Lambdas
+function hourly_settlement_prices(; kwargs...)    
+    startdate = get(kwargs, :start, today() - Day(1))
+    enddate = get(kwargs, :end, today())
+    # LMPs, SystemLambda, Ancillaries 
+    dalmp = ErcotMagic.batch_retrieve_data(startdate, enddate, "da_prices") |> 
+        (data -> rename(data, :SettlementPointPrice => :DALMP)) |> 
+        (data -> select(data, [:DATETIME, :DALMP, :SettlementPoint]))
+    # Get RT data 
+    rt = ErcotMagic.batch_retrieve_data(startdate, enddate, "rt_prices") |> 
+        (data -> ErcotMagic.process_5min_settlements_to_hourly(data)) |> 
+        (data -> select(data, [:DATETIME, :RTLMP, :SettlementPoint])) 
+    anc = ErcotMagic.batch_retrieve_data(startdate, enddate, "ancillary_prices")
+    ## Convert from Long to wide 
+    ancmin = dropmissing(unstack(select(anc, [:AncillaryType, :MCPC, :DATETIME]), :DATETIME, :AncillaryType, :MCPC))
+    # System Lambda 
+    dasyslambda = ErcotMagic.batch_retrieve_data(startdate, enddate, "da_system_lambda") |> 
+        (data -> select(data, [:DATETIME, :SystemLambda])) |> 
+        (data -> rename(data, :SystemLambda => :DASystemLambda))
+    rtsyslambda = ErcotMagic.batch_retrieve_data(startdate, enddate, "rt_system_lambda") |>
+        (data -> ErcotMagic.process_5min_lambda_to_hourly(data))
+    # Combine all the data - join by DATETIME
+    combined_df = innerjoin(dalmp, rt, on=[:DATETIME, :SettlementPoint])
+    combined_df = leftjoin(combined_df, ancmin, on=:DATETIME)
+    combined_df = leftjoin(combined_df, dasyslambda, on=:DATETIME)
+    combined_df = leftjoin(combined_df, rtsyslambda, on=:DATETIME)
+end
+
+function hourly_mw_settlement()
+    # TK
+end
+
+function hourly_forecasts()
+    # TK
+end
+
+function actual_production()
+    # TK
+end
+
 # Function to update the non-SCED data
 # This function is used to update the non-SCED data from the API. It is run daily to get the latest data. The data is then saved in a csv file and pushed to a BigQuery table.
 function daily_nonsced_update(;kwargs...)

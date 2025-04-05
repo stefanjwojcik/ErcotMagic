@@ -7,6 +7,9 @@ using ErcotMagic, Dates, DataFrames
 start_date = Date(2024, 12, 4)
 end_date = Date(2024, 12, 5)
 
+## Get Sced Settlement Prices 
+sced_prices = ErcotMagic.batch_retrieve_data(start_date, end_date, "ancillary_prices")
+
 # Get the gen ancillary data 
 sgas = ErcotMagic.SCED_gen_data(from=start_date, to=end_date, addparams=Dict("resourceName" => "NOBLESLR_BESS1"))
 ErcotMagic.normalize_columnnames!(sgas)

@@ -17,14 +17,14 @@ end
 
 function parse_hour_ending(date::DateTime, hour_ending::String)
     if hour_ending == "24:00"
-        return date + Hour(Time("00:00")) + Day(1)
+        return date + Hour(Time("00:00")) + Day(1) - Hour(1)
     else
-        return date + Hour(Time(hour_ending, "HH:MM"))
+        return date + Hour(Time(hour_ending, "HH:MM")) - Hour(1)
     end
 end
 
 function parse_hour_ending(date::DateTime, hour_ending::Int64)
-    return date + Hour(hour_ending)
+    return date + Hour(hour_ending) - Hour(1)
 end
 
 
