@@ -39,15 +39,17 @@ function hourly_settlement_prices(; kwargs...)
     combined_df = leftjoin(combined_df, rtsyslambda, on=:DATETIME)
 end
 
-function hourly_mw_settlement()
-    # TK
+function hourly_mw_awards(; kwargs...)
+    startdate = get(kwargs, :start, today() - Day(1))
+    enddate = get(kwargs, :end, today())
+    # MWs, SystemLambda, Ancillaries
 end
 
 function hourly_forecasts()
     # TK
 end
 
-function actual_production()
+function actual_system_production()
     # TK
 end
 

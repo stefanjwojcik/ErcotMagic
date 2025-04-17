@@ -24,8 +24,14 @@ end
 
 ### Bulk downloading pure Generation Resource SCED  data 
 function SCED_gen_data(; kwargs...)
+    from = get(kwargs, :from, today() - Dates.Day(89) )
+    to = get(kwargs, :to, from + Dates.Day(2))
+    resourceName = get(kwargs, :resourceName, "NOBLESLR_SOLAR1")
     addparams = get(kwargs, :addparams, Dict())
     params = Dict("size" => "1000000", 
+                "SCEDTimestampFrom" => string(DateTime(from)),
+                "SCEDTimestampTo" => string(DateTime(to)),
+                "resourceName" => resourceName,
                 #"resourceType" => "PVGR", 
                 #"submittedTPOPrice1From" => "-40", # wind comes at -40
                 #"submittedTPOPrice1To" => "4000", 
