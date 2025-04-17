@@ -1,0 +1,13 @@
+{
+  "name": "Julia Dev Container",
+  "image": "julialang/julia:1.10",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "julialang.language-julia"
+      ]
+    }
+  },
+  "features": {},
+  "postCreateCommand": "julia -e 'using Pkg; Pkg.instantiate()'"
+}
