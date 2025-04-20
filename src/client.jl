@@ -45,12 +45,9 @@ end
 # Function to formulate a url for ERCOT API based on params in kwargs
 params = Dict("deliveryDateFrom" => "2021-08-01", "deliveryDateTo" => "2024-02-25")
 params2 = Dict("settlementPointName" => "HB_NORTH")
-url = ercot_api_url(params)
-# try to cal 
-response = ercot_api_call(token["id_token"], url)
 
 ## DAM prices
-dampricesurl = ercot_api_url(params, da_prices)
+dampricesurl = ercot_api_url(params, ErcotMagic.da_prices)
 response = ercot_api_call(token["id_token"], dampricesurl)
 
 ## RT prices
@@ -201,6 +198,39 @@ function batch_retrieve_data(startdate::Date, enddate::Date, endpoint::String; k
     @showprogress for (i, marketday) in enumerate(alldays)
         fromtime = Date(marketday)
         totime = Date(min(marketday + Day(batchsize-1), enddate))
+        # update params for the batch 
+        params = ErcotMagic.APIparams(endpoint, fromtime, totime, additional_params=additional_params)
+        ## GET THE DATA 
+        dat = get_ercot_data(params, url)
+        if isempty(dat)
+            @warn "No data delivered for $(fromtime) to $(totime)"
+            continue
+        end
+        normalize_columnnames!(dat)
+        add_datetime!(dat)
+        alldat = push!(alldat, dat)
+    end
+    out = vcat(alldat...)
+    return out
+end
+
+"""
+## Function to get data for a vector of dates
+
+dates = [Date(2024, 2, 1)]
+dat = ErcotMagic.get_data("ercot_actual_load", dates)
+
+"""
+function get_data(endpoint::String, dates::Vector{Date}; kwargs...)
+    url = get(kwargs, :url, ErcotMagic.ENDPOINTS[endpoint][2])
+    limit= get(kwargs, :limit, 1000000)
+    additional_params = get(kwargs, :additional_params, Dict())
+    ###################################
+    alldat = DataFrame[]
+    # split by day 
+    @showprogress for (i, marketday) in enumerate(dates)
+        fromtime = Date(marketday)
+        totime = Date(marketday)
         # update params for the batch 
         params = ErcotMagic.APIparams(endpoint, fromtime, totime, additional_params=additional_params)
         ## GET THE DATA 

@@ -30,20 +30,21 @@ nothing_to_zero(x) = isnothing(x) ? 0.0 : x
 nothing_to_missing(x) = isnothing(x) ? missing : x
 
 ## NEW 
-#include("endpoints.jl") ## Contains all the URLS for the Ercot API
-#include("client.jl") ## Contains the client functions to get the data from the API
-#include("utils.jl") ## Contains the utility functions to process the data 
+include("endpoints.jl") ## Contains all the URLS for the Ercot API
+include("client.jl") ## Contains the client functions to get the data from the API
+include("tokenstorage.jl") ## Generate and store tokens 
+include("utils.jl") ## Contains the utility functions to process the data 
 #include("prices.jl")   # all zonal and system level prices data for DA, RT, and Ancillary Services
 #include("load.jl") # all zonal and system level load data
 #include("gen.jl") # all zonal and system level generation data for wind, solar, and thermal
 #include("awards.jl") #includes ancillary, 60 day generation, and load awards at the asset or node level
 
 ## OLD 
-include("constants.jl") # Contains all the URLS for the Ercot API 
-include("load_data.jl")
-include("postprocessing.jl")
-include("sceddy.jl") # Contains functions to process SCED data - move to a different package 
-include("bq.jl")
+#include("constants.jl") # Contains all the URLS for the Ercot API 
+#include("load_data.jl")
+#include("postprocessing.jl")
+#include("sceddy.jl") # Contains functions to process SCED data - move to a different package 
+#include("bq.jl")
 
 
 ## Open Artifact Training Data: utility function using artifacts
