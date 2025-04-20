@@ -1,22 +1,4 @@
 ## CONSTANTS and Configs for calling ERCOT API
-# This is a change
-
-"""
-## ERCOT API Configurations
-# five min vs hourly 
-# posted vs non-posted 
-# unstacked vs stacked 
-# datekey + hourkey 
-"""
-mutable struct ErcotAPIConfig
-    datekey::String
-    hourkey::String
-    intervalkey::String
-    endpoint::String
-    url::String
-    posted::Bool
-    stacked::Bool
-end
 
 ## Moving to a single constants dictionary 
 const ENDPOINTS = Dict(
@@ -57,32 +39,6 @@ function get_non_sced_endpoints()
     "wind_system_forecast",
     "system_lambda", 
     "binding_constraints"]
-end
-
-"""
-## Function to convert the payload to parameters for the API call 
-ep = "da_prices"
-startdate = Date(2024, 2, 1)
-enddate = Date(2024, 2, 10)
-params = ErcotMagic.APIparams(ep, startdate, enddate)
-"""
-function APIparams(endpointname::String, startdate::Date, enddate::Date; settlement_point::String="HB_NORTH", additional_params=Dict())
-    datekey, url = ENDPOINTS[endpointname]
-    params = Dict(datekey * "From" => string(startdate), 
-                 datekey * "To" => string(enddate))
-    # IF endpoint contains "forecast", then add "postedDatetimeFrom" and "postedDatetimeTo"
-    # 24 hours before the startdate  
-    if occursin("binding_constraints", endpointname)
-        params = Dict()
-        params["SCEDTimestampFrom"] = string(DateTime(startdate))
-        params["SCEDTimestampTo"] = string(DateTime(enddate))
-    end
-    #if occursin("prices", endpointname)
-    #    params["settlementPoint"] = settlement_point
-    #end
-    params["size"] = "1000000"
-    merge!(params, additional_params)
-    return params
 end
 
 
