@@ -29,9 +29,9 @@ nothing_to_missing(x) = isnothing(x) ? missing : x
 
 ## Include Sced 
 include("constants.jl") # Contains all the URLS for the Ercot API 
-include("postprocessing.jl")
-include("sceddy.jl") # Contains functions to process SCED data
 include("load_data.jl")
+include("postprocessing.jl")
+include("sceddy.jl") # Contains functions to process SCED data - move to a different package 
 include("bq.jl")
 
 """
@@ -169,6 +169,61 @@ function get_ercot_data(params, url)
     token = get_auth_token()
     response = ercot_api_call(token["id_token"], ercot_api_url(params, url))
     return parse_ercot_response(response)
+end
+
+"""
+### Get multiple days of Data for any endpoint 
+startdate = Date(2024, 2, 1)
+enddate = Date(2024, 2, 10)
+
+## Gen Forecast 
+startdate = Date(2024, 2, 1)
+enddate = Date(2024, 2, 4)
+gen = ErcotMagic.batch_retrieve_data(startdate, enddate, "solar_prod_5min")
+
+## Load Forecast
+load = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4), "ercot_load_forecast")
+
+## Actual Load 
+actual_load = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4), "ercot_actual_load")
+
+## RT LMP 
+rt = ErcotMagic.batch_retrieve_data(Date(2023, 12, 13), Date(2024, 2, 4), "rt_prices")
+
+## DA LMP
+da = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4), "da_prices")
+
+## Ancillary Prices 
+anc = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4), "ancillary_prices")
+
+## Binding Constraints 
+bc = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4), "binding_constraints")
+"""
+function batch_retrieve_data(startdate::Date, enddate::Date, endpoint::String; kwargs...)
+    url = get(kwargs, :url, ErcotMagic.ENDPOINTS[endpoint][2])
+    batchsize = get(kwargs, :batchsize, 4)
+    additional_params = get(kwargs, :additional_params, Dict())
+    ###################################
+    alldat = DataFrame[]
+    # split by day 
+    alldays = [x for x in startdate:Day(batchsize):enddate]
+    @showprogress for (i, marketday) in enumerate(alldays)
+        fromtime = Date(marketday)
+        totime = Date(min(marketday + Day(batchsize-1), enddate))
+        # update params for the batch 
+        params = ErcotMagic.APIparams(endpoint, fromtime, totime, additional_params=additional_params)
+        ## GET THE DATA 
+        dat = get_ercot_data(params, url)
+        if isempty(dat)
+            @warn "No data delivered for $(fromtime) to $(totime)"
+            continue
+        end
+        normalize_columnnames!(dat)
+        add_datetime!(dat)
+        alldat = push!(alldat, dat)
+    end
+    out = vcat(alldat...)
+    return out
 end
 
 
