@@ -2,7 +2,17 @@
 
 using ErcotMagic 
 
-# Function For DA Virtuals 
+"""
+# Gets DA Virtual Offers 
+
+Example:
+```julia
+using ErcotMagic
+settlementPointName = "NOBLESLR_ALL"
+dat = DAVirtuals(addparams=Dict("settlementPointName" => settlementPointName))
+```
+
+"""
 function DAVirtuals(; kwargs...)
     addparams = get(kwargs, :addparams, Dict())
     endpoint = get(kwargs, :endpoint, ErcotMagic.sixty_dam_awards)
@@ -22,7 +32,7 @@ function output_and_awards()
     # Actual Realized SCED Net output + ancillary awards
     sol1 = ErcotMagic.SCED_gen_data(addparams=Dict("resourceName" => "NOBLESLR_SOLAR1"))
     ErcotMagic.normalize_columnnames!(sol1)
-    sol1 = sced_to_hourly(sol1)
+    sol1 = ErcotMagic.sced_to_hourly(sol1)
     sol2 = ErcotMagic.SCED_gen_data(addparams=Dict("resourceName" => "NOBLESLR_SOLAR2"))
     ErcotMagic.normalize_columnnames!(sol2)
     sol2 = sced_to_hourly(sol2)
