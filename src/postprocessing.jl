@@ -50,8 +50,11 @@ function add_datetime!(df::DataFrame)
     elseif "DeliveryDate" ∈ names(df)
         df.DATETIME = parse_hour_ending.(DateTime.(df[!, "DeliveryDate"]), df[!, "HourEnding"])
         return
-    elseif "SCEDTimestamp" ∈ names(df)
+    elseif "SCEDTimestamp" ∈ names(df) 
         df.DATETIME = DateTime.(df[!, "SCEDTimestamp"])
+        return
+    elseif "SCEDTimeStamp" ∈ names(df) 
+        df.DATETIME = DateTime.(df[!, "SCEDTimeStamp"])
         return
     else
         @warn "No datetime columns found in the DataFrame"
@@ -125,7 +128,7 @@ function process_one_endpoint(startdate::Date, enddate::Date, endpoint::String; 
         data = vcat(actuals, forecasts)
     else 
         # Stack the values on top and label by the endpoint 
-        data = data #ErcotMagic.stack_and_label(data, endpoint)
+        data = ErcotMagic.stack_and_label(data, endpoint)
     end
     ## 
     return data

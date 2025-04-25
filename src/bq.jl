@@ -109,6 +109,14 @@ Arguments:
 da = ErcotMagic.batch_retrieve_data(Date(2023, 12, 13), Date(2023, 12, 13), "da_prices")
 ErcotMagic.send_to_bq_table(da[1:2,:], "ercot", "da_prices")
 
+# Load in the mapped data 
+dat = CSV.read("data/Resource_Node_to_Unit_latest.csv", DataFrame)
+# convert all columns to string 
+for col in names(dat)
+    dat[!, Symbol(col)] = string.(dat[!, Symbol(col)])
+end
+ErcotMagic.send_to_bq_table(dat, "ercot", "nodetounit")
+
 """
 function send_to_bq_table(df::DataFrame, dataset_name::String, table_name::String)
     # Temporary JSON file
@@ -199,3 +207,9 @@ function bq_csv(query::String, path::String)
     run(pipeline(`bq query --use_legacy_sql=false --format=csv $query`, path))
 end
 
+# Idea is to dynamically update the Bigquery Data 
+function get_start_date(endpoint::String)
+    bq_start_date = ErcotMagic.bq("SELECT MAX(DATETIME(DATETIME)) FROM ercot." * endpoint)
+    bq_start_date = isnothing(bq_start_date) ? Date(2023, 12, 13) : Date(bq_start_date[1, 1])
+    return bq_start_date + Day(1)
+end

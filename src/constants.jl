@@ -1,23 +1,10 @@
 ## CONSTANTS and Configs for calling ERCOT API
 
-"""
-## ERCOT API Configurations
-# five min vs hourly 
-# posted vs non-posted 
-# unstacked vs stacked 
-# datekey + hourkey 
-"""
-mutable struct ErcotAPIConfig
-    datekey::String
-    hourkey::String
-    intervalkey::String
-    endpoint::String
-    url::String
-    posted::Bool
-    stacked::Bool
-end
 
-## Moving to a single constants dictionary 
+"""
+## ENDPOINTS: 
+- contains the endpoint name, the date key, and the URL for the API call 
+"""
 const ENDPOINTS = Dict(
     "da_prices" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np4-190-cd/dam_stlmnt_pnt_prices?"),
     "rt_prices" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np6-905-cd/spp_node_zone_hub?"),
@@ -36,15 +23,18 @@ const ENDPOINTS = Dict(
     "sixty_dam_energy_only_offers" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_only_offers?"),
     "sixty_dam_awards" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_only_offer_awards?"),
     "energybids" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_bids?"),
-    ## This gives the amount of virtuals awarded 
+    ## This gives the amount of virtuals awarded by resource and settlement point
     "gen_data" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_gen_res_data?"),
     "twodayAS" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-911-er/2d_agg_as_offers_ecrsm?"),
-    "sced_gen_data" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-965-er/60_sced_gen_res_data?"),
+    "sced_gen_data" => ("SCEDTimestamp", "https://api.ercot.com/api/public-reports/np3-965-er/60_sced_gen_res_data?"),
     "sced_energy_only_offers" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_only_offers?"),
     "sced_gen_as_data" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_gen_res_as_offers?"), 
     "sced_load_data" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_load_res_data?")
 )
 
+"""
+Function to list non-SCED endpoints for convenience
+"""
 function get_non_sced_endpoints()
     return  ["da_prices", 
     "rt_prices", 
@@ -59,22 +49,37 @@ function get_non_sced_endpoints()
 end
 
 """
+## Forecast endpoints 
+"""
+function get_production_endpoints()
+    return ["ercot_load_forecast", 
+    "ercot_zone_load_forecast", 
+    "ercot_actual_load", 
+    "ercot_outages", 
+    "solar_system_forecast", 
+    "wind_system_forecast"]
+end
+
+"""
 ## Function to convert the payload to parameters for the API call 
+Takes in the endpoint name, start date, end date, and any additional parameters 
+
 ep = "da_prices"
 startdate = Date(2024, 2, 1)
 enddate = Date(2024, 2, 10)
 params = ErcotMagic.APIparams(ep, startdate, enddate)
 """
-function APIparams(endpointname::String, startdate::Date, enddate::Date; settlement_point::String="HB_NORTH", additional_params=Dict())
+function APIparams(endpointname::String, startdate::Date, enddate::Date; additional_params=Dict())
     datekey, url = ENDPOINTS[endpointname]
-    params = Dict(datekey * "From" => string(startdate), 
-                 datekey * "To" => string(enddate))
     # IF endpoint contains "forecast", then add "postedDatetimeFrom" and "postedDatetimeTo"
     # 24 hours before the startdate  
-    if occursin("binding_constraints", endpointname)
-        params = Dict()
-        params["SCEDTimestampFrom"] = string(DateTime(startdate))
-        params["SCEDTimestampTo"] = string(DateTime(enddate))
+    params = Dict()
+    if datekey == "SCEDTimestamp"
+        params[datekey * "From"] = string(DateTime(startdate))
+        params[datekey * "To"] = string(DateTime(enddate))
+    else 
+        params[datekey * "From"] = string(startdate)
+        params[datekey * "To"] = string(enddate)
     end
     #if occursin("prices", endpointname)
     #    params["settlementPoint"] = settlement_point

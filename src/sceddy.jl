@@ -13,13 +13,19 @@ function SCED_load_as(; kwargs...)
     get_ercot_data(params, ErcotMagic.sced_load_as)
 end
 
+"""
+# Gets all ancillary awarded resources for a specific resource
+- AwardedQuantity, 
+"""
 function SCED_gen_as(; kwargs...)
     from = get(kwargs, :from, today() - Dates.Day(89) )
     to = get(kwargs, :to, from + Dates.Day(2))
+    resourceName = get(kwargs, :resourceName, "NOBLESLR_BESS1")
     params = Dict("deliveryDateFrom" => string(from), 
                 "deliveryDateTo" => string(to), 
-                "size" => "1000000") #  
-    get_ercot_data(params, ErcotMagic.sced_gen_as)
+                "size" => "1000000", 
+                "resourceName" => resourceName) #  
+    get_ercot_data(params, ErcotMagic.gen_data)
 end
 
 ### Bulk downloading pure Generation Resource SCED  data 

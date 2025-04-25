@@ -4,15 +4,10 @@ using ErcotMagic, Dates, DataFrames
 
 ErcotMagic.bq_auth()
 
-# Idea is to dynamically update the Bigquery Data 
-function get_start_date(endpoint::String)
-    bq_start_date = ErcotMagic.bq("SELECT MAX(DATETIME(DATETIME)) FROM ercot." * endpoint)
-    bq_start_date = isnothing(bq_start_date) ? Date(2023, 12, 13) : Date(bq_start_date[1, 1])
-    return bq_start_date + Day(1)
-end
-
-## Hourly Settlement Prices - DA/RT/Ancillaries/Lambdas
-function hourly_settlement_prices(; kwargs...)    
+"""
+## Gets Hourly Settlement Prices - DA/RT/Ancillaries/Lambdas
+"""
+function hourly_nodal_prices(; kwargs...)    
     startdate = get(kwargs, :start, today() - Day(1))
     enddate = get(kwargs, :end, today())
     # LMPs, SystemLambda, Ancillaries 
@@ -39,12 +34,62 @@ function hourly_settlement_prices(; kwargs...)
     combined_df = leftjoin(combined_df, rtsyslambda, on=:DATETIME)
 end
 
-function hourly_mw_settlement()
-    # TK
+"""
+## Gets net unit output, ancillary awards, and LSL/HSL for all UNITS at a specific node 
+"""
+function hourly_nodal_volumes(; kwargs...)
+    startdate = get(kwargs, :start, Date("2024-06-01"))
+    enddate = get(kwargs, :end, Date("2024-06-05"))
+    RESOURCE_NODE = get(kwargs, :RESOURCE_NODE, "NOBLESLR_ALL")
+    nodetounit = ErcotMagic.bq("SELECT * FROM ercot.nodetounit WHERE RESOURCE_NODE = '$RESOURCE_NODE'")
+    unit_stations = nodetounit.UNIT_SUBSTATION .* "_" .* nodetounit.UNIT_NAME
+    ## SCED Generation 
+    station_data = DataFrame()
+    for station in unit_stations 
+        ap = Dict("resourceName" => station)
+        sced = ErcotMagic.batch_retrieve_data(startdate, enddate, "sced_gen_data", additional_params=ap)
+        sced = ErcotMagic.sced_to_hourly(sced)
+        ## INCLUDES LSL/HSL/Ancillary Service ECRS/NSRS/REGDN/REGUP/RRS/RRSFFR AWARDS
+        sced = select(sced, [:DATETIME, :TelemeteredNetOutput, 
+                            :LSL, :HSL, :AncillaryServiceECRS, 
+                          :AncillaryServiceNSRS, :AncillaryServiceREGDN, 
+                         :AncillaryServiceREGUP, :AncillaryServiceRRS, 
+                         :AncillaryServiceRRSFFR])
+        sced[!, :ResourceName] .= station
+        station_data = vcat(station_data, sced)
+    end
+    # Aggregate to the Resource Node by grouping by hour
+    station_data.SettlementPoint .= RESOURCE_NODE
+    return station_data 
 end
 
-function hourly_forecasts()
-    # TK
+"""
+## Gets the hourly DA virtual ENERGY ONLY OFFERS for a specific node 
+"""
+function hourly_energy_only_virtuals(; kwargs...)
+    startdate = get(kwargs, :start, today() - Day(1))
+    enddate = get(kwargs, :end, today())
+    RESOURCE_NODE = get(kwargs, :RESOURCE_NODE, "NOBLESLR_ALL")
+    ap = Dict("settlementPointName" => RESOURCE_NODE)
+    virts = ErcotMagic.batch_retrieve_data(startdate, enddate, "sixty_dam_awards", additional_params=ap)
+    select(virts, [:EnergyOnlyOfferAwardinMW, :SettlementPoint, :DATETIME])
+    return virts
+end
+
+function hourly_production_forecasts(; kwargs...)
+    startdate = get(kwargs, :start, today() - Day(1))
+    enddate = get(kwargs, :end, today())
+    addparams = Dict("size" => "1000000")
+    #last_updated = ErcotMagic.get_last_updated()
+    production_endpoints = ErcotMagic.get_production_endpoints()
+    out = DataFrame[]
+    for endpoint in production_endpoints
+        println("Processing endpoint: ", endpoint)
+        dat = ErcotMagic.process_one_endpoint(startdate, enddate, endpoint, additional_params=addparams)
+        push!(out, dat)
+    end
+    println("Forecast/production data updated successfully")
+    return out
 end
 
 function actual_production()
@@ -54,27 +99,7 @@ end
 # Function to update the non-SCED data
 # This function is used to update the non-SCED data from the API. It is run daily to get the latest data. The data is then saved in a csv file and pushed to a BigQuery table.
 function daily_nonsced_update(;kwargs...)
-    addparams = Dict("size" => "1000000")
-    #last_updated = ErcotMagic.get_last_updated()
-    non_sced_endpoints = ErcotMagic.get_non_sced_endpoints()
-    for endpoint in non_sced_endpoints
-        println("Processing endpoint: ", endpoint)
-        try
-            # Queries the BigQuery table to get the last updated date
-            bq_start_date = get_start_date(endpoint)
-            if bq_start_date >= today()
-                println("No new data available for endpoint: ", endpoint)
-                continue
-            end
-            dat = ErcotMagic.process_one_endpoint(bq_start_date, today(), endpoint, additional_params=addparams)
-            # Stores the data at endpoint specific location
-            ErcotMagic.send_to_bq_table(dat, "ercot", endpoint)
-        catch e
-            println("Error processing endpoint: ", endpoint)
-            println(e)
-        end
-    end
-    println("Non-SCED data updated successfully")
+
 end 
 
 ## Now Function to Update the SCED Data 

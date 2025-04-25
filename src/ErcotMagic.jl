@@ -22,6 +22,7 @@ export get_auth_token,
         average_sced_mws,
         update_da_offer_data
 
+# Load environment variables from .env file
 DotEnv.config()
 
 nothing_to_zero(x) = isnothing(x) ? 0.0 : x
@@ -35,7 +36,6 @@ include("load_data.jl")
 include("bq.jl")
 
 """
-
 # A function to retreive the auth token 
 ```julia-repl
 token = get_auth_token()
@@ -135,7 +135,7 @@ function parse_ercot_response(response; verbose=false)
 end
 
 """
-# Mega function to get the data from ERCOT API
+# Retrieve and parse the data from ERCOT API
 
 Examples:
 params = Dict("deliveryDateFrom" => "2024-02-01", "deliveryDateTo" => "2024-02-25", "settlementPoint" => "HB_NORTH")

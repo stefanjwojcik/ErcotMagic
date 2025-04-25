@@ -1,4 +1,5 @@
 ## Logic for dealing with token expiration and fetching a new token if necessary
+## Idea is to reduce overhead by not fetching a new token every time
 
 # Global variable to store token and its timestamp
 @kwdef mutable struct TokenStorage

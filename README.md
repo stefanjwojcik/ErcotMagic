@@ -7,6 +7,8 @@ Make sure all Ercot User and Password are stored in the environment variables `E
 ## Notes on the API and Data
 According to the forums, pricing data for current products is only available starting from mid December 2023. It is challenging to retrieve data any earlier than that. 
 
+Mapping from units to node points is provided here: https://www.ercot.com/mp/data-products/data-product-details?id=NP4-160-SG
+
 ## Main Development Items  
 - [X] Add API Key to the environment variables
 - [X] Generate constants as URLS for the API
@@ -26,12 +28,13 @@ According to the forums, pricing data for current products is only available sta
     - [ ] Parse Ancillary Service offers
 
 
-- [ ] Interesting Features 
-    - [ ] SCEDDY - A tool to determine the optimal energy offer price for a given day
+- [ ] API Features 
+    - [ ] Get the latest data available for a given date
+    - [ ] Sceddy - A tool to determine the optimal energy offer price for a given day
     - [ ] Stack - Generates an expected price curve for a given day based on historical data and net load for the coming day 
-    - [ ] Proxy - Generates spreads of DART for a given day based on historical data  (net load, generation, outages, etc)
-    - [ ] Replay - Training data for a BESS RL model 
-    - [ ] Congest - Generates congestion prices for a given day based on historical data
+    - [ ] Proxy - Generates spreads of DART for a given day based on historical proxy data (net load, generation, outages, etc)
+    - [ ] Replay - Training data for a BESS RL model (for renewable-tied resources, includes solar output)
+    - [ ] Congest - Generates congestion prices for a given forward day based on historical data
 
 
 ## Other Things to do
@@ -43,7 +46,8 @@ According to the forums, pricing data for current products is only available sta
 
 ### Backlog/Not Important
 - [X] BigQuery Dynamic Loading (bq.jl)
-    - [ ] Generate tables for each endpoint 
+    - [ ] Generate tables containing constituent data  (e.g. wind, solar, etc) 
+    - [ ] Generate tables for each API endpoint 
     - [ ] Determine the latest date available (if any)
     - [ ] Load Data with a specific date range
     - [ ] Set up Cron Job to update data daily

@@ -1,7 +1,5 @@
 ### Load ERCOT Data for Forecasting and Training
 
-## TODO: Deal with load forecasts 
-
 ###################
 
 function add_fiveminute_intervals!(df::DataFrame)
@@ -88,6 +86,11 @@ anc = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4), "ancill
 
 ## Binding Constraints 
 bc = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 4), "binding_constraints")
+
+## Sced Production 
+ap = Dict("resourceType" => "PVGR")
+#ap = Dict("resourceName" => "NOBLESLR_SOLAR1")
+sced = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 2), "sced_gen_data", additional_params=ap)
 """
 function batch_retrieve_data(startdate::Date, enddate::Date, endpoint::String; kwargs...)
     url = get(kwargs, :url, ErcotMagic.ENDPOINTS[endpoint][2])
@@ -99,6 +102,7 @@ function batch_retrieve_data(startdate::Date, enddate::Date, endpoint::String; k
     alldays = [x for x in startdate:Day(batchsize):enddate]
     @showprogress for (i, marketday) in enumerate(alldays)
         fromtime = Date(marketday)
+        # TODO: This needs to be refactored - 
         totime = Date(min(marketday + Day(batchsize-1), enddate))
         # update params for the batch 
         params = ErcotMagic.APIparams(endpoint, fromtime, totime, additional_params=additional_params)
@@ -106,13 +110,12 @@ function batch_retrieve_data(startdate::Date, enddate::Date, endpoint::String; k
         dat = get_ercot_data(params, url)
         if isempty(dat)
             @warn "No data delivered for $(fromtime) to $(totime)"
-            continue
+        else 
+            normalize_columnnames!(dat)
+            add_datetime!(dat)
+            alldat = push!(alldat, dat)    
         end
-        normalize_columnnames!(dat)
-        add_datetime!(dat)
-        alldat = push!(alldat, dat)
     end
     out = vcat(alldat...)
     return out
 end
-
