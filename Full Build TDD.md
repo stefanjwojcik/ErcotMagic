@@ -1,4 +1,4 @@
-Here's a breakdown of the project into major pillars, with subtasks that you can approach incrementally. This structure also aligns with building a business around it:
+Here's a breakdown of the project into major pillars, with subtasks:
 
 
 ---
