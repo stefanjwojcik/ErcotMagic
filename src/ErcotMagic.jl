@@ -28,12 +28,41 @@ DotEnv.config()
 nothing_to_zero(x) = isnothing(x) ? 0.0 : x
 nothing_to_missing(x) = isnothing(x) ? missing : x
 
-## Include Sced 
-include("constants.jl") # Contains all the URLS for the Ercot API 
-include("postprocessing.jl")
-include("sceddy.jl") # Contains functions to process SCED data
-include("load_data.jl")
-include("bq.jl")
+
+@kwdef mutable struct ErcotSpec
+    endpoint::String
+    summary::String
+    parameters::Vector{String}
+end
+
+# Returns all endpoints from the OpenAPI spec in ErcotSpec format
+function parse_all_endpoints()
+    # OpenAPI spec for the ERCOT API
+    open_spec_url = "https://raw.githubusercontent.com/ercot/api-specs/refs/heads/main/pubapi/pubapi-apim-api.json"
+    # Load the Open API spec
+    open_spec = download(open_spec_url) |> JSON.parsefile
+    allkeys = collect(keys(open_spec["paths"]))
+    # drop / and /version from allkeys 
+    allkeys = filter(x -> x != "/" && x != "/version", allkeys)
+    endpoints = [open_spec["servers"][1]["url"]*x for x in allkeys]
+    summaries = [open_spec["paths"][x]["get"]["summary"] for x in allkeys]
+    params = [open_spec["paths"][x]["get"]["parameters"] for x in allkeys]
+    # Get the date key for each endpoint
+    params = Vector{String}[] # vector of vectors of strings
+    for x in allkeys 
+            prms = open_spec["paths"][x]["get"]["parameters"]# get dicts
+            prms = [prms[i]["name"] for i in 1:length(prms)] # extract named parameters
+            push!(params, prms)
+    end
+    # Create a vector of ErcotSpec objects -> should this be a dictionary of specs? 
+    ercot_specs = Vector{ErcotSpec}()
+    for i in 1:length(allkeys)
+        # Create a new ErcotSpec object and push it to the vector
+        push!(ercot_specs, ErcotSpec(endpoint=endpoints[i], summary=summaries[i], parameters=params[i]))
+    end
+    return ercot_specs
+end
+
 
 """
 # A function to retreive the auth token 
@@ -182,5 +211,11 @@ function trainingdata()
     return dat["alldata"]
 end
 
+## Other Dependencies 
+include("constants.jl") # Contains all the URLS for the Ercot API 
+include("postprocessing.jl")
+include("sceddy.jl") # Contains functions to process SCED data
+include("load_data.jl")
+include("bq.jl")
 
 end # module

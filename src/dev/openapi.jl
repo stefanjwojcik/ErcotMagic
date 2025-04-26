@@ -1,30 +1,33 @@
 using JSON
 
-### Parse the Open API spec for the ERCOT API 
-open_spec_url = "https://raw.githubusercontent.com/ercot/api-specs/refs/heads/main/pubapi/pubapi-apim-api.json"
 
-# Load the Open API spec
-open_spec = download(open_spec_url) |> JSON.parsefile
-
-# Get a valid server path 
-ercot_api_url = open_spec["servers"][1]["url"]
-
-# Gives the open_spec
-function parse_all_endpoints()
-    # OpenAPI spec for the ERCOT API
-    open_spec_url = "https://raw.githubusercontent.com/ercot/api-specs/refs/heads/main/pubapi/pubapi-apim-api.json"
-    # Load the Open API spec
-    open_spec = download(open_spec_url) |> JSON.parsefile
-    allurls = [open_spec["servers"][1]["url"]*x for x in keys(open_spec["paths"])]
+function get_date_key(paramsvec::Vector{String})
+    possible_date_keys = ["DeliveryDate", 
+                         "deliveryDate",
+                         "DeliveryHour", 
+                         "deliveryHour",
+                         "DeliveryInterval", 
+                         "IntervalEnding", 
+                         "intervalTime",
+                         "OperatingDay", 
+                         "operatingDay",
+                         "OperatingDate", 
+                         "SCEDTimestamp", 
+                         "SCEDTimeStamp", 
+                         "RTDTimestamp", 
+                         "LDFDate"]
+    # Remove "To" and "From" Get first matching date key from params 
+    found_params = String[]
+    for param in replace.(paramsvec, "To" => "", "From" => "")
+        # Check if the parameter is in the list of possible date keys
+        if param in possible_date_keys
+            push!(found_params, param)
+        end
+    end
+    return found_params
 end
 
 
-mutable struct ErcotSpec
-    openapi::String
-    servers::Vector{Url}
-    paths::Vector{Path}
-    tags::Vector{Tags}
-end
 
 mutable struct Url
     url::String
