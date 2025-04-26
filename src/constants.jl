@@ -1,37 +1,93 @@
 ## CONSTANTS and Configs for calling ERCOT API
-# This is a change
 
+@kwdef mutable struct EndPoint
+    endpoint::String
+    summary::String
+    parameters::Vector{String}
+    datekey::Vector{String}=String[]
+end
+
+function parse_github_openapi_spec(; kwargs...)
+    download_spec = get(kwargs, :download_spec, false)
+    if download_spec 
+        # OpenAPI spec for the ERCOT API
+        open_spec_url = "https://raw.githubusercontent.com/ercot/api-specs/refs/heads/main/pubapi/pubapi-apim-api.json"
+        # Load the Open API spec
+        open_spec = download(open_spec_url) |> JSON.parsefile
+    else 
+        open_spec = JSON.parsefile("artifacts/pubapi-apim-api.json")
+    end
+    allkeys = collect(keys(open_spec["paths"]))
+    return open_spec, allkeys
+end
+
+function parse_endpoints_summaries(allkeys, open_spec)
+    endpoints = [open_spec["servers"][1]["url"]*x*"?" for x in allkeys]
+    summaries = [open_spec["paths"][x]["get"]["summary"] for x in allkeys]
+    return endpoints, summaries
+end
+
+function extract_named_parameters(allkeys, open_spec)
+    # Extract named parameters 
+    paramslist = Vector{String}[] # vector of vectors of strings
+    for x in allkeys 
+        prms = open_spec["paths"][x]["get"]["parameters"]# get dicts
+        prms = [prms[i]["name"] for i in 1:length(prms)] # extract named parameters
+        push!(paramslist, prms)
+    end
+    return paramslist
+end    
 
 """
-## ENDPOINTS: 
-- contains the endpoint name, the date key, and the URL for the API call 
+# Retrieves a list of possible date keys for filtering
+- Checks for keywords in the parameter names
 """
-const ENDPOINTS = Dict(
-    "da_prices" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np4-190-cd/dam_stlmnt_pnt_prices?"),
-    "rt_prices" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np6-905-cd/spp_node_zone_hub?"),
-    "ancillary_prices" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np4-188-cd/dam_clear_price_for_cap?"),
-    "da_system_lambda" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np4-523-cd/dam_system_lambda?"),
-    "rt_system_lambda" => ("SCEDTimestamp", "https://api.ercot.com/api/public-reports/np6-322-cd/sced_system_lambda?"),
-    "ercot_load_forecast" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-566-cd/lf_by_model_study_area?"),
-    "ercot_zone_load_forecast" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-565-cd/lf_by_model_weather_zone?"),
-    "ercot_actual_load" => ("operatingDay", "https://api.ercot.com/api/public-reports/np6-345-cd/act_sys_load_by_wzn?"),
-    "ercot_outages" => ("operatingDate", "https://api.ercot.com/api/public-reports/np3-233-cd/hourly_res_outage_cap?"),
-    "solar_system_forecast" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np4-737-cd/spp_hrly_avrg_actl_fcast?"),
-    "wind_system_forecast" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np4-732-cd/wpp_hrly_avrg_actl_fcast?"),
-    "wind_prod_5min" => ("intervalEnding", "https://api.ercot.com/api/public-reports/np4-733-cd/wpp_actual_5min_avg_values?"),
-    "solar_prod_5min" => ("intervalEnding", "https://api.ercot.com/api/public-reports/np4-738-cd/spp_actual_5min_avg_values?"),
-    "binding_constraints" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np6-86-cd/shdw_prices_bnd_trns_const?"),
-    "sixty_dam_energy_only_offers" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_only_offers?"),
-    "sixty_dam_awards" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_only_offer_awards?"),
-    "energybids" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_bids?"),
-    ## This gives the amount of virtuals awarded by resource and settlement point
-    "gen_data" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_gen_res_data?"),
-    "twodayAS" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-911-er/2d_agg_as_offers_ecrsm?"),
-    "sced_gen_data" => ("SCEDTimestamp", "https://api.ercot.com/api/public-reports/np3-965-er/60_sced_gen_res_data?"),
-    "sced_energy_only_offers" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_only_offers?"),
-    "sced_gen_as_data" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_gen_res_as_offers?"), 
-    "sced_load_data" => ("deliveryDate", "https://api.ercot.com/api/public-reports/np3-966-er/60_dam_load_res_data?")
-)
+function get_date_keys(paramsvec::Vector{String})
+    # Keywords to check for in the parameter names
+    keywords = ["date", "time", "delivery", "day"]
+    # Find parameters that match any of the keywords
+    found_params = filter(param -> any(contains(lowercase(param), kw) for kw in keywords), paramsvec)
+    # Remove "To" and "From" from the matching parameters
+    found_params = replace.(found_params, "To" => "", "From" => "")
+    # Remove duplicates
+    found_params = unique(found_params)
+end
+
+# Returns all endpoints from the OpenAPI spec in ErcotSpec format
+# Iterates through Annotated_Endpoints and creates a constant for each endpoint
+function parse_all_endpoints(Annotated_Endpoints)
+    # OpenAPI spec for the ERCOT API
+    open_spec, allkeys = parse_github_openapi_spec()
+    # drop / and /version from allkeys 
+    allkeys = filter(x -> x != "/" && x != "/version", allkeys)
+    # Extract endpoints and summaries from the OpenAPI spec
+    endpoints, summaries = parse_endpoints_summaries(allkeys, open_spec)
+    # Get all named parameters 
+    params = extract_named_parameters(allkeys, open_spec)
+    # Get all date keys
+    datekeys = [get_date_keys(params[i]) for i in 1:length(params)]
+    # Create a vector of ErcotSpec objects -> should this be a dictionary of specs? 
+    all_open_endpoints = Dict()
+    for i in 1:length(allkeys)
+        # Create a new ErcotSpec object and push it to the vector
+        all_open_endpoints[endpoints[i]] = EndPoint(endpoint=endpoints[i], 
+                                    summary=summaries[i], 
+                                    parameters=params[i], 
+                                    datekey=datekeys[i])
+    end
+    # Now, define the annotated endpoints as constants
+    for (name, (datekey, url)) in Annotated_Endpoints
+        # Find the corresponding ErcotSpec object in the vector
+        try
+            newep = all_open_endpoints[url]
+            newep.datekey = [datekey]
+            @eval global const $(Symbol(name)) = $newep
+        catch 
+            @warn "Endpoint $name not found in the OpenAPI spec"
+        end
+    end
+end
+
 
 """
 Function to list non-SCED endpoints for convenience
@@ -60,6 +116,8 @@ function get_production_endpoints()
     "solar_system_forecast", 
     "wind_system_forecast"]
 end
+
+### ****************** DEPRECATED ******************
 
 """
 ## Function to convert the payload to parameters for the API call 

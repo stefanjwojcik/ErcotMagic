@@ -4,6 +4,8 @@ A Julia package for accessing Ercot Data from their official API. See the docs [
 
 Make sure all Ercot User and Password are stored in the environment variables `ERCOT_USER` and `ERCOT_PASSWORD` respectively. You will also need `ERCOT_KEY` which is the API key. You can get an API key by signing up [here](https://developer.ercot.com/applications/pubapi/user-guide/registration-and-authentication/).
 
+OpenAPI spec is located here: "https://raw.githubusercontent.com/ercot/api-specs/refs/heads/main/pubapi/pubapi-apim-api.json"
+
 ## Notes on the API and Data
 According to the forums, pricing data for current products is only available starting from mid December 2023. It is challenging to retrieve data any earlier than that. 
 
@@ -11,7 +13,13 @@ Mapping from units to node points is provided here: https://www.ercot.com/mp/dat
 
 ## Main Development Items  
 - [X] Add API Key to the environment variables
-- [X] Generate constants as URLS for the API
+- [X] Parse Open API Spec and extract parameters, summaries
+- [X] Generate annotations of URLs for easier access
+- [X] Generate EndPoint constants within the package containing (endpoint, summary, parameters, datekey)
+- [X] Integrate EndPoint constants into get_ercot_data logic
+- [X] Merge changes to token-saving into main branch 
+
+### Loading Data
 - [X] Data Loading Functions
     - [X] Actual Load
     - [X] Actual Generation
