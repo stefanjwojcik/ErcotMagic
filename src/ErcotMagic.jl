@@ -157,7 +157,8 @@ params = Dict("deliveryDateFrom" => "2024-02-21", "deliveryDateTo" => "2024-02-2
 lf_dat = get_ercot_data(params, ercot_zone_load_forecast)
 
 ## Solar System Forecast
-params = Dict("deliveryDateFrom" => "2024-02-21")
+params = Dict("deliveryDateFrom" => "2024-02-21", 
+                "deliveryDateTo" => "2024-02-22")
 lf_dat = get_ercot_data(params, solar_system_forecast)
 
 ## Wind System Forecast
