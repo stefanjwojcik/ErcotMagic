@@ -12,6 +12,7 @@ using Dates, ProgressMeter, Statistics
 ## Generate Endpoints from OpenAPI spec 
 include("annotated_endpoints.jl") # Annotated list of endpoints
 include("constants.jl") # Contains all the URLS for the Ercot API 
+include("tokenstorage.jl")
 
 # A way to easily surface all annotated endpoints
 parse_all_endpoints(Annotated_Endpoints)
@@ -90,8 +91,9 @@ end
 
 """
 # Function to formulate a url for ERCOT API based on params in kwargs
-params = Dict("deliveryDateFrom" => "2021-08-01", "deliveryDateTo" => "2024-02-25")
-params2 = Dict("settlementPointName" => "HB_NORTH")
+params = Dict("deliveryDateFrom" => "2023-12-15", 
+                "deliveryDateTo" => "2023-12-15", 
+                "settlementPoint" => "HB_NORTH")
 url = ercot_api_url(params)
 # try to cal 
 response = ercot_api_call(token["id_token"], url)
@@ -151,9 +153,10 @@ end
 
 Examples:
 ```julia 
-import ErcotMagic as Em
 
-params = Dict("deliveryDateFrom" => "2024-02-01", "deliveryDateTo" => "2024-02-25", "settlementPoint" => "HB_NORTH")
+params = Dict("deliveryDateFrom" => "2024-02-01", 
+                "deliveryDateTo" => "2024-02-02", 
+                "settlementPoint" => "HB_NORTH")
 da_dat = get_ercot_data(params, ErcotMagic.da_prices)
 
 # Real Time Prices for every five minutes 
@@ -165,27 +168,27 @@ rt_dat = get_ercot_data(params, ErcotMagic.rt_prices)
 
 ## Load Forecast
 params = Dict("deliveryDateFrom" => "2024-02-01", "deliveryDateTo" => "2024-02-25")
-lf_dat = get_ercot_data(params, ercot_load_forecast)
+lf_dat = get_ercot_data(params, ErcotMagic.ercot_load_forecast)
 
 ## Zone Load Forecast
 params = Dict("deliveryDateFrom" => "2024-02-21", "deliveryDateTo" => "2024-02-25")
-lf_dat = get_ercot_data(params, ercot_zone_load_forecast)
+lf_dat = get_ercot_data(params, ErcotMagic.ercot_zone_load_forecast)
 
 ## Solar System Forecast
 params = Dict("deliveryDateFrom" => "2024-02-21", 
                 "deliveryDateTo" => "2024-02-22")
-lf_dat = get_ercot_data(params, solar_system_forecast)
+lf_dat = get_ercot_data(params, ErcotMagic.solar_system_forecast)
 
 ## Wind System Forecast
-params = Dict("deliveryDateFrom" => "2024-03-21")
-lf_dat = get_ercot_data(params, wind_system_forecast)
+params = Dict("deliveryDateFrom" => "2024-03-21", "size" => "10")
+lf_dat = get_ercot_data(params, ErcotMagic.wind_system_forecast)
 ```
 
 
 """
 function get_ercot_data(params::Dict{String, String}, endpoint::EndPoint)
-    token = get_auth_token()
-    response = ercot_api_call(token["id_token"], ercot_api_url(params, endpoint.endpoint))
+    token = get_valid_token!()
+    response = ercot_api_call(token, ercot_api_url(params, endpoint.endpoint))
     return parse_ercot_response(response)
 end
 
@@ -199,7 +202,7 @@ function trainingdata()
     return dat["alldata"]
 end
 
-include("postprocessing.jl")
+include("utils.jl")
 include("sceddy.jl") # Contains functions to process SCED data
 include("load_data.jl")
 include("bq.jl")
