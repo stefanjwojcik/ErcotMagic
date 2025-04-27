@@ -14,11 +14,10 @@ include("annotated_endpoints.jl") # Annotated list of endpoints
 include("constants.jl") # Contains all the URLS for the Ercot API 
 
 # A way to easily surface all annotated endpoints
-#parse_all_endpoints(Annotated_Endpoints)
+parse_all_endpoints(Annotated_Endpoints)
 global const eps = collect(keys(Annotated_Endpoints))
 
 export get_auth_token, 
-        eps,
         ercot_api_call, 
         ercot_api_url, 
         parse_ercot_response, 
@@ -151,6 +150,9 @@ end
 # Retrieve and parse the data from ERCOT API
 
 Examples:
+```julia 
+import ErcotMagic as Em
+
 params = Dict("deliveryDateFrom" => "2024-02-01", "deliveryDateTo" => "2024-02-25", "settlementPoint" => "HB_NORTH")
 da_dat = get_ercot_data(params, ErcotMagic.da_prices)
 
@@ -177,6 +179,8 @@ lf_dat = get_ercot_data(params, solar_system_forecast)
 ## Wind System Forecast
 params = Dict("deliveryDateFrom" => "2024-03-21")
 lf_dat = get_ercot_data(params, wind_system_forecast)
+```
+
 
 """
 function get_ercot_data(params::Dict{String, String}, endpoint::EndPoint)
