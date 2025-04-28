@@ -118,7 +118,7 @@ response = ercot_api_call(token["id_token"], sixty_dam_awards_url)
 """
 function ercot_api_url(params, url)
     for (key, value) in params
-        url *= key * "=" * value * "&"
+        url *= string(key) * "=" * value * "&"
     end
     return url
 end 
@@ -154,44 +154,96 @@ end
 Examples:
 ```julia 
 
-params = Dict("deliveryDateFrom" => "2024-02-01", 
-                "deliveryDateTo" => "2024-02-02", 
-                "settlementPoint" => "HB_NORTH")
-da_dat = get_ercot_data(params, ErcotMagic.da_prices)
+# Day-Ahead Prices
+da_dat = get_ercot_data(
+    ErcotMagic.da_prices;
+    deliveryDateFrom = "2024-02-01",
+    deliveryDateTo = "2024-02-02",
+    settlementPoint = "HB_NORTH"
+)
 
-# Real Time Prices for every five minutes 
-params = Dict("RTDTimestampFrom" => "2024-02-01T00:00:00", 
-                "RTDTimestampTo" => "2024-02-02T01:00:00",
-                "settlementPoint" => "HB_NORTH", 
-                "size" => "1000000")
-rt_dat = get_ercot_data(params, ErcotMagic.rt_prices)
+# Real-Time Prices for every five minutes
+rt_dat = get_ercot_data(
+    ErcotMagic.rt_prices;
+    deliveryDateFrom = "2024-02-01",
+    deliveryDateTo = "2024-02-02",
+    settlementPoint = "HB_NORTH",
+    size = "10"
+)
 
-## Load Forecast
-params = Dict("deliveryDateFrom" => "2024-02-01", "deliveryDateTo" => "2024-02-25")
-lf_dat = get_ercot_data(params, ErcotMagic.ercot_load_forecast)
+# Load Forecast
+lf_dat = get_ercot_data(
+    ErcotMagic.ercot_load_forecast;
+    deliveryDateFrom = "2024-02-01",
+    deliveryDateTo = "2024-02-25"
+)
 
-## Zone Load Forecast
-params = Dict("deliveryDateFrom" => "2024-02-21", "deliveryDateTo" => "2024-02-25")
-lf_dat = get_ercot_data(params, ErcotMagic.ercot_zone_load_forecast)
+# Zone Load Forecast
+lf_dat = get_ercot_data(
+    ErcotMagic.ercot_zone_load_forecast;
+    deliveryDateFrom = "2024-02-21",
+    deliveryDateTo = "2024-02-25", 
+    size = "10"
+)
 
-## Solar System Forecast
-params = Dict("deliveryDateFrom" => "2024-02-21", 
-                "deliveryDateTo" => "2024-02-22")
-lf_dat = get_ercot_data(params, ErcotMagic.solar_system_forecast)
-
+# Solar System Forecast
+lf_dat = get_ercot_data(
+    ErcotMagic.solar_system_forecast;
+    deliveryDateFrom = "2024-02-21",
+    deliveryDateTo = "2024-02-22"
+)
 ## Wind System Forecast
-params = Dict("deliveryDateFrom" => "2024-03-21", "size" => "10")
-lf_dat = get_ercot_data(params, ErcotMagic.wind_system_forecast)
+lf_dat = get_ercot_data(ErcotMagic.wind_system_forecast; 
+                deliveryDateFrom = "2024-03-21", 
+                deliveryDateTo = "2024-03-22", 
+                size = "10")
 ```
 
 
 """
-function get_ercot_data(params::Dict{String, String}, endpoint::EndPoint)
+function get_ercot_data(endpoint::EndPoint; kwargs...)
+    params = Dict(kwargs)
     token = get_valid_token!()
     response = ercot_api_call(token, ercot_api_url(params, endpoint.endpoint))
     return parse_ercot_response(response)
 end
 
+"""
+# Retrieve and parse the data from ERCOT API for a specific date, regardless of the date key
+- automatically will determine the date key based on the endpoint
+Examples:
+```julia
+# Day-Ahead Prices
+da_dat = get_data(ErcotMagic.da_prices, Date(2024, 2, 1))
+"""
+function get_data(endpoint::EndPoint, date::Date; kwargs...)
+    params = kwargs_to_string(Dict(kwargs))
+    # add the datekey 
+    dateparams!(endpoint, date, params)
+    token = get_valid_token!()
+    response = ercot_api_call(token, ercot_api_url(params, endpoint.endpoint))
+    return parse_ercot_response(response)
+end
+
+"""
+# Vectorized dates version of the get_data function 
+
+- Takes in a vector of dates and returns a DataFrame
+- Automatically determines the date key based on the endpoint
+Examples:
+
+```julia
+# Day-Ahead Prices
+da_dat = ErcotMagic.get_data(ErcotMagic.da_prices, [Date(2024, 2, 1), Date(2024, 2, 2)], settlementPoint="AEEC")
+```
+"""
+function get_data(endpoint::EndPoint, dates::Vector{Date}; kwargs...)
+    dat = DataFrame()
+    for d in dates
+        dat = vcat(dat, get_data(endpoint, d; kwargs...))
+    end
+    return dat
+end
 
 ## Open Artifact Training Data: utility function using artifacts
 
@@ -203,6 +255,7 @@ function trainingdata()
 end
 
 include("utils.jl")
+include("prices.jl") # Contains functions to process prices data
 include("sceddy.jl") # Contains functions to process SCED data
 include("load_data.jl")
 include("bq.jl")

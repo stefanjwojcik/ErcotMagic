@@ -120,33 +120,5 @@ end
 
 ### ****************** DEPRECATED ******************
 
-"""
-## Function to convert the payload to parameters for the API call 
-Takes in the endpoint name, start date, end date, and any additional parameters 
-
-ep = "da_prices"
-startdate = Date(2024, 2, 1)
-enddate = Date(2024, 2, 10)
-params = ErcotMagic.APIparams(ep, startdate, enddate)
-"""
-function APIparams(endpointname::String, startdate::Date, enddate::Date; additional_params=Dict())
-    datekey, url = ENDPOINTS[endpointname]
-    # IF endpoint contains "forecast", then add "postedDatetimeFrom" and "postedDatetimeTo"
-    # 24 hours before the startdate  
-    params = Dict()
-    if datekey == "SCEDTimestamp"
-        params[datekey * "From"] = string(DateTime(startdate))
-        params[datekey * "To"] = string(DateTime(enddate))
-    else 
-        params[datekey * "From"] = string(startdate)
-        params[datekey * "To"] = string(enddate)
-    end
-    #if occursin("prices", endpointname)
-    #    params["settlementPoint"] = settlement_point
-    #end
-    params["size"] = "1000000"
-    merge!(params, additional_params)
-    return params
-end
 
 
