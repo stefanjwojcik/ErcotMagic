@@ -256,8 +256,8 @@ end
 
 include("utils.jl")
 include("prices.jl") # Contains functions to process prices data
-include("sceddy.jl") # Contains functions to process SCED data
-include("load_data.jl")
-include("bq.jl")
+#include("sceddy.jl") # Contains functions to process SCED data
+#include("load_data.jl")
+#include("bq.jl")
 
 end # module

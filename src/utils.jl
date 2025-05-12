@@ -121,9 +121,9 @@ function process_sced_to_hourly(df::DataFrame, timecol=:SCEDTimestamp)
     return df
 end
 
-function sced_to_hourly(df::DataFrame)
+function to_hourly(df::DataFrame, datecol::Symbol)
     # Ensure :DATETIME is rounded to the hour
-    df.DATETIME = Dates.floor.(DateTime.(df.SCEDTimeStamp), Dates.Hour)
+    df.DATETIME = Dates.floor.(DateTime.(df[:, datecol]), Dates.Hour)
 
     # Aggregate all numeric columns by taking their mean
     numeric_cols = [col for col in names(df) if eltype(df[:, Symbol(col)]) <: Real]  # Select numeric columns
@@ -132,4 +132,8 @@ function sced_to_hourly(df::DataFrame)
     # Group by :DATETIME and apply aggregation
     df_hourly = combine(groupby(df, :DATETIME), agg_funcs...)
     return df_hourly
+end
+
+function add_sced_hourly_column!(df::DataFrame; timecol::Symbol=:SCEDTimestamp)
+    df.DATETIME = Dates.floor.(DateTime.(df[:, timecol]), Dates.Hour)
 end
