@@ -15,7 +15,7 @@ function parse_github_openapi_spec(; kwargs...)
         # Load the Open API spec
         open_spec = download(open_spec_url) |> JSON.parsefile
     else 
-        open_spec = JSON.parsefile("artifacts/pubapi-apim-api.json")
+        open_spec = JSON.parsefile(joinpath(pkgdir(ErcotMagic),"artifacts/pubapi-apim-api.json"))
     end
     allkeys = collect(keys(open_spec["paths"]))
     return open_spec, allkeys
