@@ -1,7 +1,7 @@
 name = "ErcotMagic"
 uuid = "34c02352-c634-4dad-8e49-2b6a6cebc26b"
 authors = ["stefanjwojcik <stefan.wojcik@colorado.edu>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 AWSS3 = "1c724243-ef5b-51ab-93f4-b0a88ac62a95"
