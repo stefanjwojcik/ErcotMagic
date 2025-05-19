@@ -121,6 +121,45 @@ function process_sced_to_hourly(df::DataFrame, timecol=:SCEDTimestamp)
     return df
 end
 
+function impute_using_moving_average(vec::Vector{Union{Missing, Float64}}, window::Int=4)
+    # Create a copy of the vector to avoid modifying the original
+    vec_copy = copy(vec)
+
+    # Iterate over the vector and replace missing values with the moving average
+    for i in 1:length(vec_copy)
+        if ismissing(vec_copy[i])
+            # Calculate the moving average of the surrounding values
+            start_idx = max(1, i - window)
+            end_idx = min(length(vec_copy), i + window)
+            surrounding_values = vec_copy[start_idx:end_idx]
+            non_missing_values = filter(!ismissing, surrounding_values)
+            if !isempty(non_missing_values)
+                vec_copy[i] = mean(non_missing_values)
+            end
+        end
+    end
+
+    return vec_copy
+end
+
+"""
+## Function to find missing values in a DataFrame and impute them using moving average
+
+
+"""
+function find_missing_and_impute(df::DataFrame, window::Int=4)
+    # Find all columns with missing values
+    cols_with_union_missing = [col for col in names(df) if eltype(df[!, col]) == Union{Missing, Float64}]
+
+    # Impute missing values in each column
+    for col in cols_with_union_missing
+        df[!, col] = impute_using_moving_average(df[!, col], window)
+        # Parse back to Float64
+        df[!, col] = convert.(Float64, df[:, col])
+    end
+    return df
+end
+
 function to_hourly(df::DataFrame, datecol::Symbol)
     # Ensure :DATETIME is rounded to the hour
     df.DATETIME = Dates.floor.(DateTime.(df[:, datecol]), Dates.Hour)

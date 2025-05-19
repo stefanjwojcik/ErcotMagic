@@ -6,30 +6,11 @@ function ancillary_long_to_wide(dat::DataFrame)
     return dat_wide
 end
 
-"""
-Filter kwargs to include only those that are valid for the given endpoint
-"""
-function filter_valid_kwargs(endpoint::ErcotMagic.EndPoint, kwargs)
-    # Extract parameter names from the endpoint definition
-    # Assuming endpoint.parameters is a vector or collection of parameter information
-    valid_param_names = Symbol[]
-    
-    # This part depends on how parameters are stored in your EndPoint struct
-    # For example, if endpoint.parameters is an array of named tuples or structs:
-    if hasproperty(endpoint, :parameters) && !isnothing(endpoint.parameters)
-        for param in endpoint.parameters
-            push!(valid_param_names, Symbol(param))
-        end
-    end
-    
-    # Filter kwargs to include only those whose keys are in valid_param_names
-    return Dict(k => v for (k, v) in kwargs if k in valid_param_names)
-end
 
 """
 ## Get all DA prices data 
 
-hourlyprices = get_hourly_da_prices([Date(2024, 2, 1), Date(2024, 2, 2)]; settlementPoint="AEEC")
+hourlyprices = ErcotMagic.get_hourly_da_prices([Date(2024, 2, 1), Date(2024, 2, 2)]; settlementPoint="AEEC")
 
 """
 function get_hourly_da_prices(dates::Vector{Date}; kwargs...)
@@ -43,9 +24,7 @@ function get_hourly_da_prices(dates::Vector{Date}; kwargs...)
     out = DataFrame[]
     for ep in pricesendpoints
         # check to ensure kwargs exist 
-        @info "Endpoint: $(ep.endpoint) "
         filtered_kwargs = filter_valid_kwargs(ep, kwargs)
-        @info "Filtered kwargs: $(filtered_kwargs)"
         dat = ErcotMagic.normalize_columnnames!(ErcotMagic.get_data(ep, dates; filtered_kwargs...))
         ErcotMagic.add_datetime!(dat)
         if ep.summary == "DAM Clearing Prices for Capacity"
@@ -100,12 +79,14 @@ function join_all_prices(fiveminprices::DataFrame, hourlyprices::DataFrame; kwar
     agg = get(kwargs, :agg, "5min")
     if agg == "5min"
         # create hourly column for five min prices to join on
+        fiveminprices.DATETIME5 = copy(fiveminprices.DATETIME)
         fiveminprices.DATETIME = Dates.floor.(DateTime.(fiveminprices[:, :DATETIME]), Dates.Hour)
         # join on DATETIME
         out = leftjoin(fiveminprices, hourlyprices, on = [:DATETIME, :SettlementPoint])
 
     elseif agg == "hourly"
         # aggregate fivemin prices to hourly
+        fiveminprices = ErcotMagic.find_missing_and_impute(fiveminprices)
         fiveminprices = ErcotMagic.to_hourly(fiveminprices, :DATETIME)
         # join on DATETIME
         out = leftjoin(hourlyprices, fiveminprices, on = :DATETIME)

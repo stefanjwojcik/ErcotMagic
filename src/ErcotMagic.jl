@@ -209,6 +209,26 @@ function get_ercot_data(endpoint::EndPoint; kwargs...)
 end
 
 """
+Filter kwargs to include only those that are valid for the given endpoint
+"""
+function filter_valid_kwargs(endpoint::ErcotMagic.EndPoint, kwargs)
+    # Extract parameter names from the endpoint definition
+    # Assuming endpoint.parameters is a vector or collection of parameter information
+    valid_param_names = Symbol[]
+    
+    # This part depends on how parameters are stored in your EndPoint struct
+    # For example, if endpoint.parameters is an array of named tuples or structs:
+    if hasproperty(endpoint, :parameters) && !isnothing(endpoint.parameters)
+        for param in endpoint.parameters
+            push!(valid_param_names, Symbol(param))
+        end
+    end
+    
+    # Filter kwargs to include only those whose keys are in valid_param_names
+    return Dict(k => v for (k, v) in kwargs if k in valid_param_names)
+end
+
+"""
 # Retrieve and parse the data from ERCOT API for a specific date, regardless of the date key
 - automatically will determine the date key based on the endpoint
 Examples:
@@ -217,7 +237,8 @@ Examples:
 da_dat = get_data(ErcotMagic.da_prices, Date(2024, 2, 1))
 """
 function get_data(endpoint::EndPoint, date::Date; kwargs...)
-    params = kwargs_to_string(Dict(kwargs))
+    filtered_kwargs = filter_valid_kwargs(endpoint, kwargs)
+    params = kwargs_to_string(Dict(filtered_kwargs))
     # add the datekey 
     dateparams!(endpoint, date, params)
     token = get_valid_token!()
@@ -257,7 +278,8 @@ end
 include("utils.jl")
 include("prices.jl") # Contains functions to process prices data
 #include("sceddy.jl") # Contains functions to process SCED data
-#include("load_data.jl")
+include("batch_retrieve.jl")
+include("postprocessing.jl")
 #include("bq.jl")
 
 end # module

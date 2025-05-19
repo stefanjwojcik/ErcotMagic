@@ -39,8 +39,8 @@ ap = Dict("resourceType" => "PVGR")
 #ap = Dict("resourceName" => "NOBLESLR_SOLAR1")
 sced = ErcotMagic.batch_retrieve_data(Date(2024, 2, 1), Date(2024, 2, 2), "sced_gen_data", additional_params=ap)
 """
-function batch_retrieve_data(startdate::Date, enddate::Date, endpoint::String; kwargs...)
-    url = get(kwargs, :url, ErcotMagic.ENDPOINTS[endpoint][2])
+function batch_retrieve_data(startdate::Date, enddate::Date, endpoint::ErcotMagic.EndPoint; kwargs...)
+    url = get(kwargs, :url, endpoint.endpoint)
     batchsize = get(kwargs, :batchsize, 4)
     additional_params = get(kwargs, :additional_params, Dict())
     ###################################
