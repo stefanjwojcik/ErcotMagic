@@ -85,14 +85,22 @@ end
 
 """
 # Filter by Posted or PostedDateTime for Forecast data in order to get the latest forecast
+
+date = Date(2024, 2, 1) 
+dat = ErcotMagic.get_data(ErcotMagic.solar_system_forecast, date; postedDatetimeTo="2024-02-01T00:00:00") 
+dat |> 
+    ErcotMagic.normalize_columnnames! |> 
+    ErcotMagic.add_datetime! 
+
+
 """
-function filter_forecast_by_posted(df::DataFrame, days_back=1)
+function filter_forecast_by_posted(df::DataFrame, days_back=1, morninghour=7)
     if "DATETIME" ∉ names(df)
         @warn "No DATETIME column in the DataFrame, attempting to add"
         add_datetime!(df)
     end
     if "Posted" ∈ names(df) && sum(ismissing, df.Posted) == 0
-        df = filter(row -> DateTime(row.Posted) .<= (row.DATETIME - Day(days_back)) , df)
+        df = filter(row -> DateTime(row.Posted) .<= (row.DATETIME - Day(days_back) + Hour(morninghour)) , df)
         # Now, group by the DATETIME and get the latest forecast
         df = combine(groupby(df, :DATETIME), val -> first(val, 1))
         nrow(df) == 0 && @warn "No data found for the specified date range"
