@@ -92,6 +92,8 @@ dat |>
     ErcotMagic.normalize_columnnames! |> 
     ErcotMagic.add_datetime! 
 
+Load Forecast 
+get_vintage_forecast(Date(2024, 2, 1), ErcotMagic.ercot_load_forecast)
 
 """
 function filter_forecast_by_posted(df::DataFrame, days_back=1, morninghour=7)
