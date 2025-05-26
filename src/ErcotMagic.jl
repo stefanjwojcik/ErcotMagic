@@ -280,7 +280,7 @@ include("prices.jl") # Contains functions to process prices data
 #include("sceddy.jl") # Contains functions to process SCED data
 include("batch_retrieve.jl")
 include("postprocessing.jl")
-#include("load.jl")
+include("load.jl")
 #include("bq.jl")
 
 end # module
