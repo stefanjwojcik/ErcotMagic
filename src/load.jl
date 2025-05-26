@@ -3,8 +3,14 @@
 """
 Get previously posted forecast for a series of dates
 
-Example:
-ErcotMagic.get_vintage_forecast(Date(2024, 2, 1), ErcotMagic.solar_system_forecast)
+Example:Solar Forecast 
+get_vintage_forecast(Date(2024, 2, 1), ErcotMagic.solar_system_forecast)
+
+Wind Forecast 
+get_vintage_forecast(Date(2024, 2, 1), ErcotMagic.wind_system_forecast)
+
+Load Forecast 
+get_vintage_forecast(Date(2024, 2, 1), ErcotMagic.ercot_load_forecast)
 """
 function get_vintage_forecast(date::Date, endpoint::ErcotMagic.EndPoint; kwargs...)
     # Latest acceptable forecast is 7am the prior day 
@@ -30,7 +36,7 @@ function supply_demand_forecast(;kwargs...)
     # Solar and Wind generation
     for date in startdate:enddate
         solar_gen = ErcotMagic.get_vintage_forecast(date, ErcotMagic.solar_system_forecast, kwargs...)
-        solar_gen = select(solar_gen, [:DATETIME, :PVGRPPSystemWide])
+        solar_gen = select(solar_gen, r"DATETIME|^PVGRPP")
         wind_gen = ErcotMagic.get_vintage_forecast(date, ErcotMagic.wind_system_forecast, kwargs...)
         wind_gen = select(wind_gen, r"DATETIME|^WGRPP")
         load_forecast = ErcotMagic.get_vintage_forecast(date, ErcotMagic.ercot_load_forecast, kwargs...)
@@ -55,3 +61,4 @@ function supply_demand_forecast(;kwargs...)
     dat = innerjoin(actual_load, solar_actuals, on=:DATETIME)
     dat = innerjoin(dat, wind_actuals, on=:DATETIME)
     dat[!, :NETLOAD] = dat[!, :Total] .- dat[!, :SOLAR] .- dat[!, :WIND] 
+end
