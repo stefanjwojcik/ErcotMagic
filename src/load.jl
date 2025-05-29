@@ -3,6 +3,8 @@
 """
 Get previously posted forecast for a series of dates
 
+This function retrieves the forecast data for a specific date, ensuring that the data is from the latest acceptable forecast (7am the prior day). It can be used for solar, wind, and load forecasts.
+
 Example:Solar Forecast 
 get_vintage_forecast(Date(2024, 2, 1), ErcotMagic.solar_system_forecast)
 
@@ -46,11 +48,19 @@ function get_vintage_forecast(date::Date, endpoint::ErcotMagic.EndPoint; kwargs.
 end
 
 """
- generate a series of dates for the Forecast
-dates = [Date(2024, 2, 1) + Day(i) for i in 0:3]
-sdf = supply_demand_forecast()
+Supply and Demand Forecast
+
+This function retrieves the supply and demand forecast for a single date (defaults to next day), including solar generation, wind generation, and load forecasts. It calculates the total renewable generation and the net load (supply-demand balance).
+Example:
+```julia
+using Dates
+using ErcotMagic
+# Define a series of dates for the forecast
+date = Date(2024, 2, 1)
+sdf = supply_demand_forecast(date = today() + Day(1))
+```
 """
-function supply_demand_forecast(; kwargs...)
+function get_net_load_forecast(; kwargs...)
     date = get(kwargs, :date, today() + Day(1))
     solar_gen = get_vintage_forecast(date, ErcotMagic.solar_system_forecast; kwargs...)
     solar_gen = select(solar_gen, r"DATETIME|COPHSLSystemWide")

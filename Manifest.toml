@@ -358,9 +358,10 @@ uuid = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 version = "0.9.3"
 
 [[deps.DotEnv]]
-git-tree-sha1 = "d48ae0052378d697f8caf0855c4df2c54a97e580"
+deps = ["PrecompileTools"]
+git-tree-sha1 = "92e88cb68a5b10545234f46dfaeb2fa8a8a50c45"
 uuid = "4dc1fcf4-5e3b-5448-94ab-0c38ec0385c1"
-version = "0.3.1"
+version = "1.0.0"
 
 [[deps.Downloads]]
 deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]

@@ -1,11 +1,31 @@
 ## Prices Data 
 
+"""
+Convert the long format DataFrame to wide format for ancillary prices
+"""
 function ancillary_long_to_wide(dat::DataFrame)
     # Convert the long format DataFrame to wide format
     dat_wide = unstack(dat, :AncillaryType, :MCPC)
     return dat_wide
 end
 
+"""
+Get hourly DA prices for a single endpoint and a single date.
+Example:
+    df = get_single_hourly_da_price(ErcotMagic.da_prices, Date(2024, 2, 1); settlementPoint="AEEC")
+"""
+function get_single_hourly_da_price(endpoint::ErcotMagic.EndPoint, date::Date; kwargs...)
+    colstodrop = [:DeliveryDate, :DSTFlag, :HourEnding]
+    filtered_kwargs = filter_valid_kwargs(endpoint, kwargs)
+    dat = ErcotMagic.normalize_columnnames!(ErcotMagic.get_data(endpoint, [date]; filtered_kwargs...))
+    ErcotMagic.add_datetime!(dat)
+    if endpoint.summary == "DAM Clearing Prices for Capacity"
+        dat = ErcotMagic.ancillary_long_to_wide(dat)
+    elseif endpoint.summary == "SCED System Lambda"
+        ErcotMagic.add_sced_hourly_column!(dat)
+    end
+    return select(dat, Not(colstodrop))
+end
 
 """
 ## Get all DA prices data 
@@ -13,7 +33,7 @@ end
 hourlyprices = ErcotMagic.get_hourly_da_prices([Date(2024, 2, 1), Date(2024, 2, 2)]; settlementPoint="AEEC")
 
 """
-function get_hourly_da_prices(dates::Vector{Date}; kwargs...)
+function get_all_hourly_da_prices(dates::Vector{Date}; kwargs...)
     colstodrop = [:DeliveryDate, :DSTFlag, :HourEnding]
     ## Define endpoints 
     pricesendpoints = ErcotMagic.EndPoint[

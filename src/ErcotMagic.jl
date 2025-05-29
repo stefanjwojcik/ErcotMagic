@@ -32,7 +32,7 @@ export get_auth_token,
         update_da_offer_data
 
 # Load environment variables from .env file
-DotEnv.config()
+DotEnv.load!()
 
 nothing_to_zero(x) = isnothing(x) ? 0.0 : x
 nothing_to_missing(x) = isnothing(x) ? missing : x
