@@ -205,7 +205,8 @@ function main()
         PT.SystemMessage(system_message), 
         PT.UserMessage("What are you and what can I use you for?"),
     ]
-
+    ## Code history 
+    
 
     # Prompt
     running = true
@@ -225,6 +226,9 @@ function main()
             continue
         elseif lowercase(user_input) == "example"
             println(Panel("EXAMPLE TBD", title="Here is an example:", style="bold red"))
+            user_input = "My example is: $example"
+        elseif lowercase(user_input) == "execute"
+            println(Panel("Execute Last Piece of Code", title="Here is an example:", style="bold red"))
             user_input = "My example is: $example"
         elseif lowercase(user_input) == "clear"
             Term.Consoles.clear()
