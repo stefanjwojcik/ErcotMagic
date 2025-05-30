@@ -37,8 +37,9 @@ DotEnv.load!()
 nothing_to_zero(x) = isnothing(x) ? 0.0 : x
 nothing_to_missing(x) = isnothing(x) ? missing : x
 
-
-# OpenAPI spec for the ERCOT API
+"""
+Provides a way to define an ERCOT API endpoint with its URL, summary, parameters, and notes.
+"""
 @kwdef mutable struct ErcotSpec
     endpoint::String
     summary::String
@@ -49,7 +50,9 @@ end
 
 
 """
-# A function to retreive the auth token 
+# A function to retreive the auth token from the ERCOT API
+This function retrieves an authentication token from the ERCOT API using the Resource Owner Password Credentials (ROPC) flow. It constructs a URL with the necessary parameters, sends a POST request, and returns the parsed JSON response containing the token.
+
 ```julia-repl
 token = get_auth_token()
 ```
@@ -73,6 +76,9 @@ end
 
 """
 # Base call to ERCOT API 
+
+Assembles the URL for the ERCOT API call, including the authorization token and headers. It sends a GET request to the specified URL and returns the parsed JSON response.
+
 - authorization => token_bearer
 - headers => Ocp-Apim-Subscription-Key => ENV["ERCOTKEY"]
 - url => https://api.ercot.com/api/public-reports/np3-966-er/60_dam_energy_only_offers
@@ -91,30 +97,10 @@ end
 
 """
 # Function to formulate a url for ERCOT API based on params in kwargs
-params = Dict("deliveryDateFrom" => "2023-12-15", 
-                "deliveryDateTo" => "2023-12-15", 
-                "settlementPoint" => "HB_NORTH")
-url = ercot_api_url(params)
-# try to cal 
-response = ercot_api_call(token["id_token"], url)
 
-## DAM prices
-dampricesurl = ercot_api_url(params, da_prices)
-response = ercot_api_call(token["id_token"], dampricesurl)
+Does not actually return any data 
 
-## RT prices
-rtpricesurl = ercot_api_url(params, rt_prices)
-response = ercot_api_call(token["id_token"], rtpricesurl)
-
-## Two day AS
-twodayasurl = ercot_api_url(params, twodayAS)
-response = ercot_api_call(token["id_token"], twodayasurl)
-
-## Sixty DAM awards
-params = Dict("deliveryDateFrom" => "2021-08-01", "deliveryDateTo" => "2024-02-25")
-sixty_dam_awards_url = ercot_api_url(params, sixty_dam_awards)
-response = ercot_api_call(token["id_token"], sixty_dam_awards_url)
-
+- See ercotapicall.jl for some examples
 """
 function ercot_api_url(params, url)
     for (key, value) in params
@@ -124,16 +110,9 @@ function ercot_api_url(params, url)
 end 
 
 """
-Takes a response object and returns a DataFrame
+Parses the response from the ERCOT API call and converts it into a DataFrame.
 
-params = Dict("deliveryDateFrom" => "2024-02-01", "deliveryDateTo" => "2024-02-25")
-
-da_dat = parse_ercot_response(ercot_api_call(token["id_token"], ercot_api_url(params, da_prices)))
-
-#Note: RTD LMP includes all adders
-params = Dict("RTDTimestampFrom" => "2024-02-01T00:00:00", "RTDTimestampTo" => "2024-02-01T01:00:00")
-rt_dat = parse_ercot_response(ercot_api_call(token["id_token"], ercot_api_url(params, rt_prices)))
-
+- See ercotapicall.jl for some examples
 """
 function parse_ercot_response(response; verbose=false)
     # data is a vector of vectors, each of them is a row 
