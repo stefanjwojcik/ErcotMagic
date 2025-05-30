@@ -166,8 +166,6 @@ da_system_lambda_dat = get_data(ErcotMagic.da_system_lambda, Date(2024, 2, 1))
 ancillary_prices_dat = get_data(ErcotMagic.ancillary_prices, Date(2024, 2, 1))
 ErcotMagic.ancillary_long_to_wide(ancillary_prices_dat)
 
-
-
 ```
 
 
@@ -211,11 +209,11 @@ function trainingdata()
     return dat["alldata"]
 end
 
-include("prices.jl") # Contains functions to process prices data
+#include("prices.jl") # Contains functions to process prices data
 #include("sceddy.jl") # Contains functions to process SCED data
-include("batch_retrieve.jl")
-include("postprocessing.jl")
-include("load.jl")
+#include("batch_retrieve.jl")
+#include("postprocessing.jl")
+#include("load.jl")
 #include("bq.jl")
 
 end # module
