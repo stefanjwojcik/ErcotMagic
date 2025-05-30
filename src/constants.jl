@@ -53,6 +53,28 @@ function get_date_keys(paramsvec::Vector{String})
     found_params = unique(found_params)
 end
 
+"""
+## Function to convert the payload to parameters for the API call 
+Takes in the endpoint name, start date, end date, and any additional parameters 
+
+ep = "da_prices"
+startdate = Date(2024, 2, 1)
+enddate = Date(2024, 2, 10)
+params = ErcotMagic.APIparams(ep, startdate, enddate)
+"""
+function dateparams!(endpoint::EndPoint, date::Date, params::Dict)
+    # IF endpoint contains "forecast", then add "postedDatetimeFrom" and "postedDatetimeTo"
+    # 24 hours before the startdate  
+    if endpoint.datekey == ["SCEDTimestamp"]
+        params[string(endpoint.datekey[1]) * "From"] = string(DateTime(date))
+        params[string(endpoint.datekey[1]) * "To"] = string(DateTime(date) + Day(1))
+    else 
+        params[string(endpoint.datekey[1]) * "From"] = string(date)
+        params[string(endpoint.datekey[1]) * "To"] = string(date)
+    end
+end
+
+
 # Returns all endpoints from the OpenAPI spec in ErcotSpec format
 # Iterates through Annotated_Endpoints and creates a constant for each endpoint
 function parse_all_endpoints(Annotated_Endpoints)

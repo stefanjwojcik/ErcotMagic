@@ -10,6 +10,7 @@ using Pkg.Artifacts
 using Dates, ProgressMeter, Statistics
 
 ## Generate Endpoints from OpenAPI spec 
+include("utils.jl") # Contains utility functions for the module
 include("annotated_endpoints.jl") # Annotated list of endpoints
 include("constants.jl") # Contains all the URLS for the Ercot API 
 include("tokenstorage.jl")
@@ -22,7 +23,7 @@ export get_auth_token,
         ercot_api_call, 
         ercot_api_url, 
         parse_ercot_response, 
-        get_ercot_data, 
+        get_data, 
         trainingdata, 
         nothing_to_zero,
         SCED_gen_data,
@@ -128,66 +129,6 @@ function parse_ercot_response(response; verbose=false)
 end
 
 """
-# Retrieve and parse the data from ERCOT API
-
-Examples:
-```julia 
-
-# Day-Ahead Prices
-da_dat = get_ercot_data(
-    ErcotMagic.da_prices;
-    deliveryDateFrom = "2024-02-01",
-    deliveryDateTo = "2024-02-02",
-    settlementPoint = "HB_NORTH"
-)
-
-# Real-Time Prices for every five minutes
-rt_dat = get_ercot_data(
-    ErcotMagic.rt_prices;
-    deliveryDateFrom = "2024-02-01",
-    deliveryDateTo = "2024-02-02",
-    settlementPoint = "HB_NORTH",
-    size = "10"
-)
-
-# Load Forecast
-lf_dat = get_ercot_data(
-    ErcotMagic.ercot_load_forecast;
-    deliveryDateFrom = "2024-02-01",
-    deliveryDateTo = "2024-02-25"
-)
-
-# Zone Load Forecast
-lf_dat = get_ercot_data(
-    ErcotMagic.ercot_zone_load_forecast;
-    deliveryDateFrom = "2024-02-21",
-    deliveryDateTo = "2024-02-25", 
-    size = "10"
-)
-
-# Solar System Forecast
-lf_dat = get_ercot_data(
-    ErcotMagic.solar_system_forecast;
-    deliveryDateFrom = "2024-02-21",
-    deliveryDateTo = "2024-02-22"
-)
-## Wind System Forecast
-lf_dat = get_ercot_data(ErcotMagic.wind_system_forecast; 
-                deliveryDateFrom = "2024-03-21", 
-                deliveryDateTo = "2024-03-22", 
-                size = "10")
-```
-
-
-"""
-function get_ercot_data(endpoint::EndPoint; kwargs...)
-    params = Dict(kwargs)
-    token = get_valid_token!()
-    response = ercot_api_call(token, ercot_api_url(params, endpoint.endpoint))
-    return parse_ercot_response(response)
-end
-
-"""
 Filter kwargs to include only those that are valid for the given endpoint
 """
 function filter_valid_kwargs(endpoint::ErcotMagic.EndPoint, kwargs)
@@ -212,8 +153,24 @@ end
 - automatically will determine the date key based on the endpoint
 Examples:
 ```julia
+using ErcotMagic
+using Dates
+
 # Day-Ahead Prices
-da_dat = get_data(ErcotMagic.da_prices, Date(2024, 2, 1))
+da_dat = get_data(ErcotMagic.da_prices, Date(2024, 2, 1), settlementPoint="AEEC")
+
+# Day-Ahead System Lambda
+da_system_lambda_dat = get_data(ErcotMagic.da_system_lambda, Date(2024, 2, 1))
+
+# Ancillary Prices - get and convert from long to wide format
+ancillary_prices_dat = get_data(ErcotMagic.ancillary_prices, Date(2024, 2, 1))
+ErcotMagic.ancillary_long_to_wide(ancillary_prices_dat)
+
+
+
+```
+
+
 """
 function get_data(endpoint::EndPoint, date::Date; kwargs...)
     filtered_kwargs = filter_valid_kwargs(endpoint, kwargs)
@@ -222,7 +179,7 @@ function get_data(endpoint::EndPoint, date::Date; kwargs...)
     dateparams!(endpoint, date, params)
     token = get_valid_token!()
     response = ercot_api_call(token, ercot_api_url(params, endpoint.endpoint))
-    return parse_ercot_response(response)
+    return normalize_columnnames!(parse_ercot_response(response))
 end
 
 """
@@ -254,7 +211,6 @@ function trainingdata()
     return dat["alldata"]
 end
 
-include("utils.jl")
 include("prices.jl") # Contains functions to process prices data
 #include("sceddy.jl") # Contains functions to process SCED data
 include("batch_retrieve.jl")

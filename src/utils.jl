@@ -24,28 +24,6 @@ function parse_hour_ending(date::DateTime, hour_ending::Int64)
 end
 
 """
-## Function to convert the payload to parameters for the API call 
-Takes in the endpoint name, start date, end date, and any additional parameters 
-
-ep = "da_prices"
-startdate = Date(2024, 2, 1)
-enddate = Date(2024, 2, 10)
-params = ErcotMagic.APIparams(ep, startdate, enddate)
-"""
-function dateparams!(endpoint::EndPoint, date::Date, params::Dict)
-    # IF endpoint contains "forecast", then add "postedDatetimeFrom" and "postedDatetimeTo"
-    # 24 hours before the startdate  
-    if endpoint.datekey == ["SCEDTimestamp"]
-        params[string(endpoint.datekey[1]) * "From"] = string(DateTime(date))
-        params[string(endpoint.datekey[1]) * "To"] = string(DateTime(date) + Day(1))
-    else 
-        params[string(endpoint.datekey[1]) * "From"] = string(date)
-        params[string(endpoint.datekey[1]) * "To"] = string(date)
-    end
-end
-
-
-"""
 # Adding Datetimes to output data 
 """
 function add_datetime!(df::DataFrames.DataFrame)
