@@ -4,7 +4,6 @@ authors = ["stefanjwojcik <stefan.wojcik@colorado.edu>"]
 version = "0.2.1"
 
 [deps]
-AIHelpMe = "01402e1f-dc83-4213-a98b-42887d758baa"
 AWSS3 = "1c724243-ef5b-51ab-93f4-b0a88ac62a95"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"

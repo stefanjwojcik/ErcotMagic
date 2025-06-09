@@ -3,18 +3,32 @@ using DataFrames
 using JSON
 #using AiModeration
 import PromptingTools as PT
-import AIHelpMe as AHM
+using PromptingTools.Experimental.AgentTools: AICode
+#import AIHelpMe as AHM
+using AIHelpMe
 using Serialization
 
 global const MODEL = "claudeh"
 
+### IMPORTANT:: SYSTEM PROMPT 
+tpl = [PT.SystemMessage("You are a world-class Data Scientist for a renewable energy company using the Julia language. Your communication is brief and concise. You're precise and answer only when you're confident in the high quality of your answer and the code involved. 
+
+There are several internal tools available to you, including:
+- 
+
+
+
+.")
+    PT.UserMessage("# Question\n\n{{ask}}")
+    ]
+
 
 const LOGO = """
-____ _____  ____  ____  _____                  
+____  _____  ____  ____   _____                  
 | ===|| () )/ (__`/ () \\|_   _|                 
 |____||_|\\_\\____)\\____/  |_|                   
- ____ __  _______  _     ____ _____  ____ _____ 
-| ===|\\ \\/ /| ()_)| |__ / () \\| () )| ===|| () )
+ ____ __  _______  _     ____ _____  ____ ___ __ 
+| ===|\\ \\/ /| ()_)| |__ / () \\| () )| ===| | () )
 |____|/_/\\_\\|_|   |____|\\____/|_|\\_\\|____||_|\\_\
 
           ERCOT Explorer
@@ -131,81 +145,22 @@ function main()
     regenerate_index()
 
     # Set up an initial system message 
-    system_message = PT.SystemMessage(
-        """You are an ERCOT (Electric Reliability Council of Texas) data analysis query parser. Your job is to parse natural language requests about ERCOT electricity market data and convert them into structured JSON instructions for a Julia-based analysis system.
-    Your Role
+    system_message =
+    "You are a virtual power market analyst with access to the latest knowledge via Context Information. 
+    You can query data, analyze data, and provide insights based on the provided context.
+    **Instructions:**
+    - Answer the question based only on the provided Context.
+    - If you don't know the answer, just say that you don't know, don't try to make up an answer.
+    - Be brief and concise.
+    **Context Information:**
+    ---
+    {{context}}
+    ---
+    "
+    cfg = PT.Experimental.RAGTools.RAGConfig()
 
-    Parse user requests for ERCOT data analysis tasks
-    Extract key parameters and intent from natural language
-    Return structured JSON that can be executed by automated systems
-    Handle ambiguous requests by making reasonable assumptions
-    Provide clear error messages for impossible requests
-
-    ERCOT Data Context
-    ERCOT manages the Texas electrical grid and provides various data types:
-    Load Data: Electricity demand (actual and forecast)
-
-    Measured in MW (megawatts)
-    Available by weather zone: COAST, EAST, FARNORTH, NORTH, NCENT, SOUTH, SCENT, WEST, HOUSTON
-    Updated every 15 minutes for actual, hourly for forecast
-
-    Price Data (LMP - Locational Marginal Pricing):
-
-    Real-time and day-ahead prices in USD/MWh
-    Available for settlement points (major hubs and zones)
-    Key hubs: HB_HOUSTON, HB_HUBAVG, HB_NORTH, HB_SOUTH, HB_WEST
-
-    Generation Data:
-
-    Power generation by fuel type and unit
-    Fuel types: COAL, GAS, NUCLEAR, HYDRO, WIND, SOLAR, OTHER
-    Real-time and historical generation output
-
-    Ancillary Services:
-
-    Regulation services, spinning reserves, non-spinning reserves
-    Capacity and pricing data
-
-    Available Intents
-
-    FETCH_DATA: Retrieve raw data from ERCOT APIs
-    VISUALIZE: Create plots, charts, dashboards
-    ANALYZE: Statistical analysis, trends, patterns
-    FORECAST: Predict future values using time series models
-    SUMMARIZE: Generate summary statistics and reports
-    COMPARE: Compare across time periods, regions, or metrics
-    ALERT: Set up monitoring for specific conditions
-    EXPORT: Save data or results to files
-
-    Time Handling
-
-    Support relative times: "last hour", "yesterday", "past week", "last month", "year to date"
-    Support absolute dates: "January 2024", "March 15, 2024", "2023-2024 winter"
-    Default timezone is Central Time (ERCOT's operating timezone)
-    For forecasts, specify horizon: "next 24 hours", "tomorrow", "next week"
-
-    Analysis Types
-    Statistical: Basic stats, distributions, percentiles
-    Seasonal: Identify seasonal patterns and cycles
-    Anomaly: Detect unusual patterns or outliers
-    Correlation: Relationships between variables
-    Trend: Long-term directional changes
-    Peak: Identify and analyze peak demand/price periods
-    Forecast_Accuracy: Compare forecasts to actual values
-    Output Formats
-
-    plot: Interactive visualizations
-    table: Tabular data display
-    summary: Text summary with key insights
-    export: Save to file (CSV, JSON, etc.)
-    dashboard: Multi-panel interactive view
-
-    """)
-    conversation = [
-        PT.SystemMessage(system_message), 
-        PT.UserMessage("What are you and what can I use you for?"),
-    ]
-    ## Code history 
+    newtmp = PT.TEMPLATE_STORE[:RAGAnswerFromContext]
+    newtmp[1] = PT.SystemMessage(system_message)    ## Code history 
     
 
     # Prompt
@@ -229,7 +184,14 @@ function main()
             user_input = "My example is: $example"
         elseif lowercase(user_input) == "execute"
             println(Panel("Execute Last Piece of Code", title="Here is an example:", style="bold red"))
-            user_input = "My example is: $example"
+            code = AICode(AIHelpMe.LAST_RESULT, safe_eval=false)
+            success_or_fail = code.success ? "Success" : "Failure"
+            println(Panel(tprint("$(code.code)"), title="Executed Code", style="bold green"))
+            if success_or_fail == "Success"
+                println(Panel("Result: $(code.result)", title="Execution Result", style="bold green"))
+            else
+                println(Panel("Error: $(code.error)", title="Execution Error", style="bold red"))
+            end
         elseif lowercase(user_input) == "clear"
             Term.Consoles.clear()
             render_welcome()
@@ -243,13 +205,11 @@ function main()
             #sleep(2)  # <-- Remove this and call your AI here
             # TODO: Add a catch here to split questions and execution
             #handle_input!(modcontext, user_input)
-            push!(conversation, PT.UserMessage(user_input))
-            result = AHM.aihelp("$user_input", return_all=true) 
-            push!(conversation, PT.AIMessage(result.answer))
+            result = aihelp"$user_input" # This is the AIHelpMe call
             result
         end
-        Term.Panel(ai_result.question, title="You Asked", style="bold green", fit=true)
-        Term.tprint(Term.parse_md(ai_result.answer))
+        Term.Panel(user_input, title="You Asked", style="bold green", fit=true)
+        Term.tprint(Term.parse_md(ai_result.content))
         #println(Panel(Term.parse_md("$ai_result"), title="AI Response", style="bold blue"))
         println()
 
@@ -273,18 +233,18 @@ function regenerate_index()
     # Create a new index
     if !isfile("ErcotMagic.jls")
         @info "No index file found. Building a new index..."
-        new_index = PT.Experimental.RAGTools.build_index([ErcotMagic])
+        new_index = PT.Experimental.RAGTools.build_index(ErcotMagic)
         # Serialize the index to a file
         serialize("ErcotMagic.jls", new_index)    
     else
         @info "Index file found. Rebuilding the index..."
     end
-    AHM.load_index!("ErcotMagic.jls")
+    AIHelpMe.load_index!("ErcotMagic.jls")
     @info "Index loaded successfully."
 end
 
 function handle_input!(user_input::String)
-    result = AHM.aihelp("$user_input", return_all=true)    
+    result = AIHelpMe.aihelp("$user_input", return_all=true)    
     ## If some signal in the result, then execute the code
     # AIHelpMe.pprint(result)
     #cb = AIHelpMe.AICode(result)

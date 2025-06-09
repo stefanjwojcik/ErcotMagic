@@ -2,13 +2,7 @@
 
 julia_version = "1.10.4"
 manifest_format = "2.0"
-project_hash = "67e570f346c5d9ed439d112f023f7db4a286f41d"
-
-[[deps.AIHelpMe]]
-deps = ["HDF5", "LazyArtifacts", "LinearAlgebra", "Logging", "PrecompileTools", "Preferences", "PromptingTools", "REPL", "SHA", "Serialization", "SparseArrays"]
-git-tree-sha1 = "12bd175f926833d143712ac32803ef09ecc4d8dd"
-uuid = "01402e1f-dc83-4213-a98b-42887d758baa"
-version = "0.2.1"
+project_hash = "eee518a097b8bbf36f811c5f2961c102c3493516"
 
 [[deps.AWS]]
 deps = ["Base64", "Compat", "Dates", "Downloads", "GitHub", "HTTP", "IniFile", "JSON", "MbedTLS", "Mocking", "OrderedCollections", "Random", "SHA", "Sockets", "URIs", "UUIDs", "XMLDict"]
@@ -1470,9 +1464,9 @@ version = "1.10.0"
 
 [[deps.PromptingTools]]
 deps = ["AbstractTrees", "Base64", "Dates", "HTTP", "JSON3", "Logging", "OpenAI", "Pkg", "PrecompileTools", "Preferences", "REPL", "Random", "Test"]
-git-tree-sha1 = "26cd156ee8af2e3195dcb53a3256133b60ca80d0"
+git-tree-sha1 = "26cbeb3d1039c1fd725b572bd473fb34974229db"
 uuid = "670122d1-24a8-4d70-bfce-740807c42192"
-version = "0.37.1"
+version = "0.46.0"
 
     [deps.PromptingTools.extensions]
     FlashRankPromptingToolsExt = ["FlashRank"]
