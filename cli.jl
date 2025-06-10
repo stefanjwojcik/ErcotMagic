@@ -165,10 +165,7 @@ function main()
             println(Panel("$(code.code)", title="Executed Code", style="bold green"))
             if isa(code.output, DataFrame)
                 # Convert DataFrame to matrix for Term.Table
-                df_matrix = Matrix(code.output)
-                # Get column names for header
-                col_names = names(code.output)
-                table = Term.Table(df_matrix, header=col_names)
+                table = display_small_df(code.output)
                 println(Panel(table, title="Execution Result", style="bold green"))
             else
                 println(Panel("Result: $(code.output)", title="Execution Result", style="bold green"))
