@@ -166,9 +166,13 @@ da_system_lambda_dat = get_data(ErcotMagic.da_system_lambda, Date(2024, 2, 1))
 ancillary_prices_dat = get_data(ErcotMagic.ancillary_prices, Date(2024, 2, 1))
 ErcotMagic.ancillary_long_to_wide(ancillary_prices_dat)
 
+# Real Time Prices 
+rt_prices_dat = get_data(ErcotMagic.rt_prices, Date(2024, 2, 1), settlementPoint="AEEC")
+
+# Real Time System Lambda
+rt_system_lambda_dat = get_data(ErcotMagic.rt_system_lambda, Date(2024, 2, 1))
+
 ```
-
-
 """
 function get_data(endpoint::EndPoint, date::Date; kwargs...)
     filtered_kwargs = filter_valid_kwargs(endpoint, kwargs)
@@ -212,8 +216,8 @@ end
 #include("prices.jl") # Contains functions to process prices data
 #include("sceddy.jl") # Contains functions to process SCED data
 #include("batch_retrieve.jl")
-#include("postprocessing.jl")
-#include("load.jl")
+include("postprocessing.jl")
+include("load.jl")
 #include("bq.jl")
 
 end # module

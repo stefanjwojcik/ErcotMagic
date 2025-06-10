@@ -5,31 +5,21 @@ using JSON
 import PromptingTools as PT
 using PromptingTools.Experimental.AgentTools: AICode
 #import AIHelpMe as AHM
-using AIHelpMe
+#using AIHelpMe
 using Serialization
 
 global const MODEL = "claudeh"
 
 ### IMPORTANT:: SYSTEM PROMPT 
-tpl = [PT.SystemMessage("You are a world-class Data Scientist for a renewable energy company using the Julia language. Your communication is brief and concise. You're precise and answer only when you're confident in the high quality of your answer and the code involved. 
+PT.load_templates!("templates")
 
-There are several internal Julia tools available to you, including:
-- 
-
-
-
-.")
-    PT.UserMessage("# Question\n\n{{ask}}")
-    ]
-
-
-const LOGO = """
-____  _____  ____  ____   _____                  
-| ===|| () )/ (__`/ () \\|_   _|                 
-|____||_|\\_\\____)\\____/  |_|                   
- ____ __  _______  _     ____ _____  ____ ___ __ 
-| ===|\\ \\/ /| ()_)| |__ / () \\| () )| ===| | () )
-|____|/_/\\_\\|_|   |____|\\____/|_|\\_\\|____||_|\\_\
+const LOGO = raw"""
+____  _____  ____  ____  _____                  
+| ===|| () )/ (__`/ () \|_   _|                 
+|____||_|\_\ ____)\____/  |_|                   
+ ____ __  _______  _     ____  _____  ____  _____ 
+| ===|\ \/ /| ()_)| |__ / () \\| () )| ===| | () )
+|____|/_/\_\|_|   |____\\____/ |_|\_\|____| |_|\_\
 
           ERCOT Explorer
 """
@@ -142,27 +132,8 @@ function main()
     # Show intro
     show_intro()
     ## Set up Information to query 
-    regenerate_index()
-
-    # Set up an initial system message 
-    system_message =
-    "You are a virtual power market analyst with access to the latest knowledge via Context Information. 
-    You can query data, analyze data, and provide insights based on the provided context.
-    **Instructions:**
-    - Answer the question based only on the provided Context.
-    - If you don't know the answer, just say that you don't know, don't try to make up an answer.
-    - Be brief and concise.
-    **Context Information:**
-    ---
-    {{context}}
-    ---
-    "
-    cfg = PT.Experimental.RAGTools.RAGConfig()
-
-    newtmp = PT.TEMPLATE_STORE[:RAGAnswerFromContext]
-    newtmp[1] = PT.SystemMessage(system_message)    ## Code history 
+    ai_result = nothing
     
-
     # Prompt
     running = true
     while running
@@ -183,14 +154,24 @@ function main()
             println(Panel("EXAMPLE TBD", title="Here is an example:", style="bold red"))
             user_input = "My example is: $example"
         elseif lowercase(user_input) == "execute"
-            println(Panel("Execute Last Piece of Code", title="Here is an example:", style="bold red"))
-            code = AICode(AIHelpMe.LAST_RESULT, safe_eval=false)
-            success_or_fail = code.success ? "Success" : "Failure"
-            println(Panel(tprint("$(code.code)"), title="Executed Code", style="bold green"))
-            if success_or_fail == "Success"
-                println(Panel("Result: $(code.result)", title="Execution Result", style="bold green"))
+            println(Panel("Execute Last Piece of Code", title="Here is your result:", style="bold red"))
+            if @isdefined ai_result
+                @info "Executing last AI result..."
             else
-                println(Panel("Error: $(code.error)", title="Execution Error", style="bold red"))
+                @info "No previous AI result to execute."
+                continue
+            end
+            code = AICode(ai_result, safe_eval=false)
+            println(Panel("$(code.code)", title="Executed Code", style="bold green"))
+            if isa(code.output, DataFrame)
+                # Convert DataFrame to matrix for Term.Table
+                df_matrix = Matrix(code.output)
+                # Get column names for header
+                col_names = names(code.output)
+                table = Term.Table(df_matrix, header=col_names)
+                println(Panel(table, title="Execution Result", style="bold green"))
+            else
+                println(Panel("Result: $(code.output)", title="Execution Result", style="bold green"))
             end
         elseif lowercase(user_input) == "clear"
             Term.Consoles.clear()
@@ -205,7 +186,7 @@ function main()
             #sleep(2)  # <-- Remove this and call your AI here
             # TODO: Add a catch here to split questions and execution
             #handle_input!(modcontext, user_input)
-            result = aihelp"$user_input" # This is the AIHelpMe call
+            result = PT.aigenerate(:ErcotMagicPrompt; ask="$user_input") # This is the AIHelpMe call
             result
         end
         Term.Panel(user_input, title="You Asked", style="bold green", fit=true)
@@ -224,31 +205,29 @@ function main()
     #ai_result = ai"$user_input"
 end
 
-############## LLM 
+### UTILS 
 
-"""
-Generates a new index for the ErcotMagic package - allow AI to answer questions about the package.
-"""
-function regenerate_index()
-    # Create a new index
-    if !isfile("ErcotMagic.jls")
-        @info "No index file found. Building a new index..."
-        new_index = PT.Experimental.RAGTools.build_index(ErcotMagic)
-        # Serialize the index to a file
-        serialize("ErcotMagic.jls", new_index)    
-    else
-        @info "Index file found. Rebuilding the index..."
+function display_small_df(df::DataFrame)
+    if ncol(df) > 5
+        # If more than 10 columns, display only the first 10
+        df = select(df, 1:5)
+        ellipsis_column = DataFrame("..." => fill("...", nrow(df)))
+        df = hcat(df, ellipsis_column)
     end
-    AIHelpMe.load_index!("ErcotMagic.jls")
-    @info "Index loaded successfully."
-end
 
-function handle_input!(user_input::String)
-    result = AIHelpMe.aihelp("$user_input", return_all=true)    
-    ## If some signal in the result, then execute the code
-    # AIHelpMe.pprint(result)
-    #cb = AIHelpMe.AICode(result)
-    return result 
+    if nrow(df) > 10
+        # If more than 10 rows, display only the first 10
+        top_rows = first(df, 5)
+        bottom_rows = last(df, 5)
+        ellipsis_row = DataFrame(Dict(name => ["..."] for name in names(df)))
+        df = vcat(top_rows, ellipsis_row, bottom_rows)
+    end
+    # Convert DataFrame to matrix for Term.Table
+    df_matrix = Matrix(df)
+    # Get column names for header
+    col_names = names(df)
+    table = Term.Table(df_matrix, header=col_names)
+    return table
 end
 
 # Launch UI
